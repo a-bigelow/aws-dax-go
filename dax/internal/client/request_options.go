@@ -18,10 +18,10 @@ package client
 import (
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/client/metadata"
-	"github.com/aws/aws-sdk-go/aws/request"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/awserr"
+	"github.com/aws/aws-sdk-go-v2/aws/retry"
+	"github.com/aws/aws-sdk-go-v2/aws/middleware"
 )
 
 type RequestOptions struct {
@@ -109,10 +109,10 @@ func ValidateRequest(r *request.Request) error {
 		return err
 	}
 	if r.Retryable != nil {
-		return awserr.New(request.InvalidParameterErrCode, "unsupported config: Retryable", nil)
+		return awserr.New(request.InvalidParameterErrorCode, "unsupported config: Retryable", nil)
 	}
 	if len(r.SignedHeaderVals) > 0 {
-		return awserr.New(request.InvalidParameterErrCode, "custom signed headers not supported", nil)
+		return awserr.New(request.InvalidParameterErrorCode, "custom signed headers not supported", nil)
 	}
 
 	return ValidateConfig(r.Config, true)
@@ -122,59 +122,59 @@ func ValidateHandlers(h request.Handlers, expectDaxHandlers bool) error {
 	if h.Validate.Len() > 0 || h.Sign.Len() > 0 || h.ValidateResponse.Len() > 0 ||
 		h.Unmarshal.Len() > 0 || h.UnmarshalMeta.Len() > 0 || h.UnmarshalError.Len() > 0 ||
 		h.Retry.Len() > 0 || h.AfterRetry.Len() > 0 || h.Complete.Len() > 0 {
-		return awserr.New(request.InvalidParameterErrCode, "custom handlers not supported", nil)
+		return awserr.New(request.InvalidParameterErrorCode, "custom handlers not supported", nil)
 	}
 	e := 0
 	if expectDaxHandlers {
 		e = 1
 	}
 	if h.Build.Len() > e || h.Send.Len() > e {
-		return awserr.New(request.InvalidParameterErrCode, "custom build or send handlers not supported", nil)
+		return awserr.New(request.InvalidParameterErrorCode, "custom build or send handlers not supported", nil)
 	}
 	return nil
 }
 
 func ValidateConfig(c aws.Config, isRequestConfig bool) error {
 	if c.CredentialsChainVerboseErrors != nil {
-		return awserr.New(request.InvalidParameterErrCode, "unsupported config: CredentialsChainVerboseErrors", nil)
+		return awserr.New(request.InvalidParameterErrorCode, "unsupported config: CredentialsChainVerboseErrors", nil)
 	}
 	if c.EndpointResolver != nil {
-		return awserr.New(request.InvalidParameterErrCode, "unsupported config: EndpointResolver", nil)
+		return awserr.New(request.InvalidParameterErrorCode, "unsupported config: EndpointResolver", nil)
 	}
 	if c.EnforceShouldRetryCheck != nil {
-		return awserr.New(request.InvalidParameterErrCode, "unsupported config: EnforceShouldRetryCheck", nil)
+		return awserr.New(request.InvalidParameterErrorCode, "unsupported config: EnforceShouldRetryCheck", nil)
 	}
 	if c.DisableSSL != nil {
-		return awserr.New(request.InvalidParameterErrCode, "unsupported config: DisableSSL", nil)
+		return awserr.New(request.InvalidParameterErrorCode, "unsupported config: DisableSSL", nil)
 	}
 	if c.HTTPClient != nil {
-		return awserr.New(request.InvalidParameterErrCode, "unsupported config: HTTPClient", nil)
+		return awserr.New(request.InvalidParameterErrorCode, "unsupported config: HTTPClient", nil)
 	}
 	if c.Retryer != nil {
-		return awserr.New(request.InvalidParameterErrCode, "unsupported config: Retryer", nil)
+		return awserr.New(request.InvalidParameterErrorCode, "unsupported config: Retryer", nil)
 	}
 	if c.DisableParamValidation != nil && *c.DisableParamValidation {
-		return awserr.New(request.InvalidParameterErrCode, "unsupported config: DisableParamValidation", nil)
+		return awserr.New(request.InvalidParameterErrorCode, "unsupported config: DisableParamValidation", nil)
 	}
 	if c.DisableComputeChecksums != nil && *c.DisableComputeChecksums {
-		return awserr.New(request.InvalidParameterErrCode, "unsupported config: DisableComputeChecksums", nil)
+		return awserr.New(request.InvalidParameterErrorCode, "unsupported config: DisableComputeChecksums", nil)
 	}
 	if c.UseDualStack != nil {
-		return awserr.New(request.InvalidParameterErrCode, "unsupported config: UseDualStack", nil)
+		return awserr.New(request.InvalidParameterErrorCode, "unsupported config: UseDualStack", nil)
 	}
 	if c.DisableRestProtocolURICleaning != nil {
-		return awserr.New(request.InvalidParameterErrCode, "unsupported config: DisableRestProtocolURICleaning", nil)
+		return awserr.New(request.InvalidParameterErrorCode, "unsupported config: DisableRestProtocolURICleaning", nil)
 	}
 	// Skip validation of S3* and EC2* options
 	if isRequestConfig {
 		if c.Credentials != nil {
-			return awserr.New(request.InvalidParameterErrCode, "unsupported config: Credentials per request. Set Credentials at client init", nil)
+			return awserr.New(request.InvalidParameterErrorCode, "unsupported config: Credentials per request. Set Credentials at client init", nil)
 		}
 		if c.Endpoint != nil {
-			return awserr.New(request.InvalidParameterErrCode, "unsupported config: Endpoint per request. Set Endpoint at client init", nil)
+			return awserr.New(request.InvalidParameterErrorCode, "unsupported config: Endpoint per request. Set Endpoint at client init", nil)
 		}
 		if c.Region != nil {
-			return awserr.New(request.InvalidParameterErrCode, "unsupported config: Region per request. Set Region at client init", nil)
+			return awserr.New(request.InvalidParameterErrorCode, "unsupported config: Region per request. Set Region at client init", nil)
 		}
 	}
 	return nil

@@ -26,10 +26,10 @@ import (
 
 	"github.com/aws/aws-dax-go/dax/internal/client"
 	"github.com/aws/aws-dax-go/dax/internal/proxy"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/client/metadata"
-	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/middleware"
+	"github.com/aws/aws-sdk-go-v2/aws/retry"
+	"github.com/aws/aws-sdk-go-v2/aws/session"
 )
 
 // Dax makes requests to the Amazon DAX API, which conforms to the DynamoDB API.
@@ -154,7 +154,7 @@ func (c *Config) mergeFrom(ac aws.Config) {
 	}
 }
 
-func (c *Config) requestOptions(read bool, ctx context.Context, opts ...request.Option) (client.RequestOptions, context.CancelFunc, error) {
+func (c *Config) requestOptions(read bool, ctx context.Context, opts ...func(*request.Request)) (client.RequestOptions, context.CancelFunc, error) {
 	r := c.WriteRetries
 	if read {
 		r = c.ReadRetries

@@ -25,11 +25,11 @@ import (
 
 	"github.com/aws/aws-dax-go/dax/internal/cbor"
 	"github.com/aws/aws-dax-go/dax/internal/lru"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/private/protocol"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/awserr"
+	"github.com/aws/aws-sdk-go-v2/aws/request"
+	"github.com/aws/aws-sdk-go-v2/private/protocol"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 )
 
 const (
@@ -148,7 +148,7 @@ func decodeError(reader *cbor.Reader) (awserr.Error, error) {
 			return nil, err
 		}
 		if (length < 3) || (length > 4) {
-			return nil, awserr.New(request.ErrCodeSerialization, fmt.Sprintf("expected 3 or 4 elements for error info, got %d", length), nil)
+			return nil, awserr.New(request.SerializationErrorCode, fmt.Sprintf("expected 3 or 4 elements for error info, got %d", length), nil)
 		}
 		if hdr, err = reader.PeekHeader(); err != nil {
 			return nil, err
@@ -186,7 +186,7 @@ func decodeError(reader *cbor.Reader) (awserr.Error, error) {
 				return nil, err
 			}
 			if arrLen%3 != 0 {
-				return nil, awserr.New(request.ErrCodeSerialization, "error found when parsing CancellationReasons", nil)
+				return nil, awserr.New(request.SerializationErrorCode, "error found when parsing CancellationReasons", nil)
 			}
 			cancellationReasonsLen := arrLen / 3
 			cancellationReasonCodes = make([]*string, cancellationReasonsLen)
@@ -347,7 +347,7 @@ func decodeTransactionCancellationReasons(ctx aws.Context, failure *daxTransacti
 	inputL := len(keys)
 	outputL := len(failure.cancellationReasonCodes)
 	if inputL != outputL {
-		return nil, awserr.New(request.ErrCodeSerialization, "Cancellation reasons must be the same length as transact items in the request", nil)
+		return nil, awserr.New(request.SerializationErrorCode, "Cancellation reasons must be the same length as transact items in the request", nil)
 	}
 	reasons := make([]*dynamodb.CancellationReason, outputL)
 	r := cbor.NewReader(bytes.NewReader(failure.cancellationReasonItems))

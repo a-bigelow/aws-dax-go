@@ -24,10 +24,10 @@ import (
 	"github.com/aws/aws-dax-go/dax/internal/cbor"
 	"github.com/aws/aws-dax-go/dax/internal/lru"
 	"github.com/aws/aws-dax-go/dax/internal/parser"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/awserr"
+	"github.com/aws/aws-sdk-go-v2/aws/request"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/gofrs/uuid"
 )
 
@@ -422,12 +422,12 @@ func encodeBatchWriteItemInput(ctx aws.Context, input *dynamodb.BatchWriteItemIn
 
 		l := len(wrs)
 		if l == 0 {
-			return awserr.New(request.InvalidParameterErrCode, fmt.Sprintf("1 validation error detected: Value '{%s=%d}' at 'requestItems' failed to satisfy constraint:"+
+			return awserr.New(request.InvalidParameterErrorCode, fmt.Sprintf("1 validation error detected: Value '{%s=%d}' at 'requestItems' failed to satisfy constraint:"+
 				" Map value must satisfy constraint: [Member must have length less than or equal to 25, Member must have length greater than or equal to 1", table, l), nil)
 		}
 		totalRequests = totalRequests + l
 		if totalRequests > maxWriteBatchSize {
-			return awserr.New(request.InvalidParameterErrCode, fmt.Sprintf("1 validation error detected: Value '{%s=%d}' at 'requestItems' failed to satisfy constraint:"+
+			return awserr.New(request.InvalidParameterErrorCode, fmt.Sprintf("1 validation error detected: Value '{%s=%d}' at 'requestItems' failed to satisfy constraint:"+
 				" Map value must satisfy constraint: [Member must have length less than or equal to 25, Member must have length greater than or equal to 1", table, totalRequests), nil)
 		}
 
@@ -439,7 +439,7 @@ func encodeBatchWriteItemInput(ctx aws.Context, input *dynamodb.BatchWriteItemIn
 		}
 
 		if hasDuplicatesWriteRequests(wrs, keys) {
-			return awserr.New(request.InvalidParameterErrCode, "Provided list of item keys contains duplicates", nil)
+			return awserr.New(request.InvalidParameterErrorCode, "Provided list of item keys contains duplicates", nil)
 		}
 		for _, wr := range wrs {
 			if pr := wr.PutRequest; pr != nil {
@@ -526,7 +526,7 @@ func encodeBatchGetItemInput(ctx aws.Context, input *dynamodb.BatchGetItemInput,
 			return err
 		}
 		if hasDuplicateKeysAndAttributes(kaas, tableKeys) {
-			return awserr.New(request.InvalidParameterErrCode, "Provided list of item keys contains duplicates", nil)
+			return awserr.New(request.InvalidParameterErrorCode, "Provided list of item keys contains duplicates", nil)
 		}
 		for _, keys := range kaas.Keys {
 			if err = cbor.EncodeItemKey(keys, tableKeys, writer); err != nil {

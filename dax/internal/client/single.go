@@ -23,12 +23,11 @@ import (
 
 	"github.com/aws/aws-dax-go/dax/internal/cbor"
 	"github.com/aws/aws-dax-go/dax/internal/lru"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/client/metadata"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/awserr"
+	"github.com/aws/aws-sdk-go-v2/aws/credentials"
+	"github.com/aws/aws-sdk-go-v2/aws/retry"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 )
 
 const (
@@ -105,13 +104,13 @@ func newSingleClientWithOptions(endpoint string, connConfigData connConfig, regi
 	client.handlers = client.buildHandlers()
 	client.keySchema = &lru.Lru{
 		MaxEntries: keySchemaLruCacheSize,
-		LoadFunc: func(ctx aws.Context, key lru.Key) (interface{}, error) {
+		LoadFunc: func(ctx context.Context, key lru.Key) (interface{}, error) {
 			table, ok := key.(string)
 			if !ok {
-				return nil, awserr.New(request.ErrCodeSerialization, "unexpected type for table name", nil)
+				return nil, awserr.New(request.SerializationErrorCode, "unexpected type for table name", nil)
 			}
 			if ctx == nil {
-				ctx = aws.BackgroundContext()
+				ctx = context.Background()
 			}
 			return client.defineKeySchema(ctx, table)
 		},
@@ -119,13 +118,13 @@ func newSingleClientWithOptions(endpoint string, connConfigData connConfig, regi
 
 	client.attrNamesListToId = &lru.Lru{
 		MaxEntries: attributeListLruCacheSize,
-		LoadFunc: func(ctx aws.Context, key lru.Key) (interface{}, error) {
+		LoadFunc: func(ctx context.Context, key lru.Key) (interface{}, error) {
 			attrNames, ok := key.([]string)
 			if !ok {
-				return nil, awserr.New(request.ErrCodeSerialization, "unexpected type for attribute list", nil)
+				return nil, awserr.New(request.SerializationErrorCode, "unexpected type for attribute list", nil)
 			}
 			if ctx == nil {
-				ctx = aws.BackgroundContext()
+				ctx = context.Background()
 			}
 			return client.defineAttributeListId(ctx, attrNames)
 		},
@@ -143,13 +142,13 @@ func newSingleClientWithOptions(endpoint string, connConfigData connConfig, regi
 
 	client.attrListIdToNames = &lru.Lru{
 		MaxEntries: attributeListLruCacheSize,
-		LoadFunc: func(ctx aws.Context, key lru.Key) (interface{}, error) {
+		LoadFunc: func(ctx context.Context, key lru.Key) (interface{}, error) {
 			id, ok := key.(int64)
 			if !ok {
-				return nil, awserr.New(request.ErrCodeSerialization, "unexpected type for attribute list id", nil)
+				return nil, awserr.New(request.SerializationErrorCode, "unexpected type for attribute list id", nil)
 			}
 			if ctx == nil {
-				ctx = aws.BackgroundContext()
+				ctx = context.Background()
 			}
 			return client.defineAttributeList(ctx, id)
 		},
@@ -169,7 +168,7 @@ func (client *SingleDaxClient) Close() error {
 func (client *SingleDaxClient) startHealthChecks(cc *cluster, host hostPort) {
 	cc.debugLog("Starting health checks for :: " + host.host)
 	client.executor.start(cc.config.ClientHealthCheckInterval, func() error {
-		ctx, cfn := context.WithTimeout(aws.BackgroundContext(), 1*time.Second)
+		ctx, cfn := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cfn()
 		var err error
 		_, err = client.endpoints(RequestOptions{MaxRetries: 3, Context: ctx})
@@ -200,7 +199,7 @@ func (client *SingleDaxClient) endpoints(opt RequestOptions) ([]serviceEndpoint,
 	return out, nil
 }
 
-func (client *SingleDaxClient) defineAttributeListId(ctx aws.Context, attrNames []string) (int64, error) {
+func (client *SingleDaxClient) defineAttributeListId(ctx context.Context, attrNames []string) (int64, error) {
 	if len(attrNames) == 0 {
 		return emptyAttributeListId, nil
 	}
@@ -220,7 +219,7 @@ func (client *SingleDaxClient) defineAttributeListId(ctx aws.Context, attrNames 
 	return out, nil
 }
 
-func (client *SingleDaxClient) defineAttributeList(ctx aws.Context, id int64) ([]string, error) {
+func (client *SingleDaxClient) defineAttributeList(ctx context.Context, id int64) ([]string, error) {
 	if id == emptyAttributeListId {
 		return []string{}, nil
 	}
@@ -240,7 +239,7 @@ func (client *SingleDaxClient) defineAttributeList(ctx aws.Context, id int64) ([
 	return out, nil
 }
 
-func (client *SingleDaxClient) defineKeySchema(ctx aws.Context, table string) ([]dynamodb.AttributeDefinition, error) {
+func (client *SingleDaxClient) defineKeySchema(ctx context.Context, table string) ([]dynamodb.AttributeDefinition, error) {
 	encoder := func(writer *cbor.Writer) error {
 		return encodeDefineKeySchemaInput(table, writer)
 	}
@@ -454,7 +453,7 @@ func (client *SingleDaxClient) build(req *request.Request) {
 	case OpGetItem:
 		input, ok := req.Params.(*dynamodb.GetItemInput)
 		if !ok {
-			req.Error = awserr.New(request.ErrCodeSerialization, "expected *GetItemInput", nil)
+			req.Error = awserr.New(request.SerializationErrorCode, "expected *GetItemInput", nil)
 			return
 		}
 		if err := encodeGetItemInput(req.Context(), input, client.keySchema, w); err != nil {
@@ -464,7 +463,7 @@ func (client *SingleDaxClient) build(req *request.Request) {
 	case OpScan:
 		input, ok := req.Params.(*dynamodb.ScanInput)
 		if !ok {
-			req.Error = awserr.New(request.ErrCodeSerialization, "expected *ScanInput", nil)
+			req.Error = awserr.New(request.SerializationErrorCode, "expected *ScanInput", nil)
 			return
 		}
 		if err := encodeScanInput(req.Context(), input, client.keySchema, w); err != nil {
@@ -474,7 +473,7 @@ func (client *SingleDaxClient) build(req *request.Request) {
 	case OpQuery:
 		input, ok := req.Params.(*dynamodb.QueryInput)
 		if !ok {
-			req.Error = awserr.New(request.ErrCodeSerialization, "expected *QueryInput", nil)
+			req.Error = awserr.New(request.SerializationErrorCode, "expected *QueryInput", nil)
 			return
 		}
 		if err := encodeQueryInput(req.Context(), input, client.keySchema, w); err != nil {
@@ -484,7 +483,7 @@ func (client *SingleDaxClient) build(req *request.Request) {
 	case OpBatchGetItem:
 		input, ok := req.Params.(*dynamodb.BatchGetItemInput)
 		if !ok {
-			req.Error = awserr.New(request.ErrCodeSerialization, "expected *BatchGetItemInput", nil)
+			req.Error = awserr.New(request.SerializationErrorCode, "expected *BatchGetItemInput", nil)
 			return
 		}
 		if err := encodeBatchGetItemInput(req.Context(), input, client.keySchema, w); err != nil {
@@ -494,7 +493,7 @@ func (client *SingleDaxClient) build(req *request.Request) {
 	case OpPutItem:
 		input, ok := req.Params.(*dynamodb.PutItemInput)
 		if !ok {
-			req.Error = awserr.New(request.ErrCodeSerialization, "expected *PutItemInput", nil)
+			req.Error = awserr.New(request.SerializationErrorCode, "expected *PutItemInput", nil)
 			return
 		}
 		if err := encodePutItemInput(req.Context(), input, client.keySchema, client.attrNamesListToId, w); err != nil {
@@ -504,7 +503,7 @@ func (client *SingleDaxClient) build(req *request.Request) {
 	case OpDeleteItem:
 		input, ok := req.Params.(*dynamodb.DeleteItemInput)
 		if !ok {
-			req.Error = awserr.New(request.ErrCodeSerialization, "expected *DeleteItemInput", nil)
+			req.Error = awserr.New(request.SerializationErrorCode, "expected *DeleteItemInput", nil)
 			return
 		}
 		if err := encodeDeleteItemInput(req.Context(), input, client.keySchema, w); err != nil {
@@ -514,7 +513,7 @@ func (client *SingleDaxClient) build(req *request.Request) {
 	case OpUpdateItem:
 		input, ok := req.Params.(*dynamodb.UpdateItemInput)
 		if !ok {
-			req.Error = awserr.New(request.ErrCodeSerialization, "expected *UpdateItemInput", nil)
+			req.Error = awserr.New(request.SerializationErrorCode, "expected *UpdateItemInput", nil)
 			return
 		}
 		if err := encodeUpdateItemInput(req.Context(), input, client.keySchema, w); err != nil {
@@ -524,7 +523,7 @@ func (client *SingleDaxClient) build(req *request.Request) {
 	case OpBatchWriteItem:
 		input, ok := req.Params.(*dynamodb.BatchWriteItemInput)
 		if !ok {
-			req.Error = awserr.New(request.ErrCodeSerialization, "expected *BatchWriteItemInput", nil)
+			req.Error = awserr.New(request.SerializationErrorCode, "expected *BatchWriteItemInput", nil)
 			return
 		}
 		if err := encodeBatchWriteItemInput(req.Context(), input, client.keySchema, client.attrNamesListToId, w); err != nil {
@@ -534,7 +533,7 @@ func (client *SingleDaxClient) build(req *request.Request) {
 	case OpTransactGetItems:
 		input, ok := req.Params.(*dynamodb.TransactGetItemsInput)
 		if !ok {
-			req.Error = awserr.New(request.ErrCodeSerialization, "expected *TransactGetItemsInput", nil)
+			req.Error = awserr.New(request.SerializationErrorCode, "expected *TransactGetItemsInput", nil)
 			return
 		}
 		extractedKeys := make([]map[string]*dynamodb.AttributeValue, len(input.TransactItems))
@@ -545,7 +544,7 @@ func (client *SingleDaxClient) build(req *request.Request) {
 	case OpTransactWriteItems:
 		input, ok := req.Params.(*dynamodb.TransactWriteItemsInput)
 		if !ok {
-			req.Error = awserr.New(request.ErrCodeSerialization, "expected *TransactWriteItemsInput", nil)
+			req.Error = awserr.New(request.SerializationErrorCode, "expected *TransactWriteItemsInput", nil)
 			return
 		}
 		extractedKeys := make([]map[string]*dynamodb.AttributeValue, len(input.TransactItems))
@@ -554,7 +553,7 @@ func (client *SingleDaxClient) build(req *request.Request) {
 			return
 		}
 	default:
-		req.Error = awserr.New(request.InvalidParameterErrCode, "unknown op "+req.Operation.Name, nil)
+		req.Error = awserr.New(request.InvalidParameterErrorCode, "unknown op "+req.Operation.Name, nil)
 		return
 	}
 	req.SetBufferBody(buf.Bytes())
@@ -570,134 +569,134 @@ func (client *SingleDaxClient) send(req *request.Request) {
 	case OpGetItem:
 		input, ok := req.Params.(*dynamodb.GetItemInput)
 		if !ok {
-			req.Error = awserr.New(request.ErrCodeSerialization, "expected *GetItemInput", nil)
+			req.Error = awserr.New(request.SerializationErrorCode, "expected *GetItemInput", nil)
 			return
 		}
 		output, ok := req.Data.(*dynamodb.GetItemOutput)
 		if !ok {
-			req.Error = awserr.New(request.ErrCodeSerialization, "expected *GetItemOutput", nil)
+			req.Error = awserr.New(request.SerializationErrorCode, "expected *GetItemOutput", nil)
 			return
 		}
 		req.Data, req.Error = client.GetItemWithOptions(input, output, opt)
 	case OpScan:
 		input, ok := req.Params.(*dynamodb.ScanInput)
 		if !ok {
-			req.Error = awserr.New(request.ErrCodeSerialization, "expected *ScanInput", nil)
+			req.Error = awserr.New(request.SerializationErrorCode, "expected *ScanInput", nil)
 			return
 		}
 		output, ok := req.Data.(*dynamodb.ScanOutput)
 		if !ok {
-			req.Error = awserr.New(request.ErrCodeSerialization, "expected *ScanOutput", nil)
+			req.Error = awserr.New(request.SerializationErrorCode, "expected *ScanOutput", nil)
 			return
 		}
 		req.Data, req.Error = client.ScanWithOptions(input, output, opt)
 	case OpQuery:
 		input, ok := req.Params.(*dynamodb.QueryInput)
 		if !ok {
-			req.Error = awserr.New(request.ErrCodeSerialization, "expected *QueryInput", nil)
+			req.Error = awserr.New(request.SerializationErrorCode, "expected *QueryInput", nil)
 			return
 		}
 		output, ok := req.Data.(*dynamodb.QueryOutput)
 		if !ok {
-			req.Error = awserr.New(request.ErrCodeSerialization, "expected *QueryOutput", nil)
+			req.Error = awserr.New(request.SerializationErrorCode, "expected *QueryOutput", nil)
 			return
 		}
 		req.Data, req.Error = client.QueryWithOptions(input, output, opt)
 	case OpBatchGetItem:
 		input, ok := req.Params.(*dynamodb.BatchGetItemInput)
 		if !ok {
-			req.Error = awserr.New(request.ErrCodeSerialization, "expected *BatchGetItemInput", nil)
+			req.Error = awserr.New(request.SerializationErrorCode, "expected *BatchGetItemInput", nil)
 			return
 		}
 		output, ok := req.Data.(*dynamodb.BatchGetItemOutput)
 		if !ok {
-			req.Error = awserr.New(request.ErrCodeSerialization, "expected *BatchGetItemOutput", nil)
+			req.Error = awserr.New(request.SerializationErrorCode, "expected *BatchGetItemOutput", nil)
 			return
 		}
 		req.Data, req.Error = client.BatchGetItemWithOptions(input, output, opt)
 	case OpPutItem:
 		input, ok := req.Params.(*dynamodb.PutItemInput)
 		if !ok {
-			req.Error = awserr.New(request.ErrCodeSerialization, "expected *PutItemInput", nil)
+			req.Error = awserr.New(request.SerializationErrorCode, "expected *PutItemInput", nil)
 			return
 		}
 		output, ok := req.Data.(*dynamodb.PutItemOutput)
 		if !ok {
-			req.Error = awserr.New(request.ErrCodeSerialization, "expected *PutItemOutput", nil)
+			req.Error = awserr.New(request.SerializationErrorCode, "expected *PutItemOutput", nil)
 			return
 		}
 		req.Data, req.Error = client.PutItemWithOptions(input, output, opt)
 	case OpDeleteItem:
 		input, ok := req.Params.(*dynamodb.DeleteItemInput)
 		if !ok {
-			req.Error = awserr.New(request.ErrCodeSerialization, "expected *DeleteItemInput", nil)
+			req.Error = awserr.New(request.SerializationErrorCode, "expected *DeleteItemInput", nil)
 			return
 		}
 		output, ok := req.Data.(*dynamodb.DeleteItemOutput)
 		if !ok {
-			req.Error = awserr.New(request.ErrCodeSerialization, "expected *DeleteItemOutput", nil)
+			req.Error = awserr.New(request.SerializationErrorCode, "expected *DeleteItemOutput", nil)
 			return
 		}
 		req.Data, req.Error = client.DeleteItemWithOptions(input, output, opt)
 	case OpUpdateItem:
 		input, ok := req.Params.(*dynamodb.UpdateItemInput)
 		if !ok {
-			req.Error = awserr.New(request.ErrCodeSerialization, "expected *UpdateItemInput", nil)
+			req.Error = awserr.New(request.SerializationErrorCode, "expected *UpdateItemInput", nil)
 			return
 		}
 		output, ok := req.Data.(*dynamodb.UpdateItemOutput)
 		if !ok {
-			req.Error = awserr.New(request.ErrCodeSerialization, "expected *UpdateItemOutput", nil)
+			req.Error = awserr.New(request.SerializationErrorCode, "expected *UpdateItemOutput", nil)
 			return
 		}
 		req.Data, req.Error = client.UpdateItemWithOptions(input, output, opt)
 	case OpBatchWriteItem:
 		input, ok := req.Params.(*dynamodb.BatchWriteItemInput)
 		if !ok {
-			req.Error = awserr.New(request.ErrCodeSerialization, "expected *BatchWriteItemInput", nil)
+			req.Error = awserr.New(request.SerializationErrorCode, "expected *BatchWriteItemInput", nil)
 			return
 		}
 		output, ok := req.Data.(*dynamodb.BatchWriteItemOutput)
 		if !ok {
-			req.Error = awserr.New(request.ErrCodeSerialization, "expected *BatchWriteItemOutput", nil)
+			req.Error = awserr.New(request.SerializationErrorCode, "expected *BatchWriteItemOutput", nil)
 			return
 		}
 		req.Data, req.Error = client.BatchWriteItemWithOptions(input, output, opt)
 	case OpTransactGetItems:
 		input, ok := req.Params.(*dynamodb.TransactGetItemsInput)
 		if !ok {
-			req.Error = awserr.New(request.ErrCodeSerialization, "expected *TransactGetItemsInput", nil)
+			req.Error = awserr.New(request.SerializationErrorCode, "expected *TransactGetItemsInput", nil)
 			return
 		}
 		output, ok := req.Data.(*dynamodb.TransactGetItemsOutput)
 		if !ok {
-			req.Error = awserr.New(request.ErrCodeSerialization, "expected *TransactGetItemsOutput", nil)
+			req.Error = awserr.New(request.SerializationErrorCode, "expected *TransactGetItemsOutput", nil)
 			return
 		}
 		req.Data, req.Error = client.TransactGetItemsWithOptions(input, output, opt)
 	case OpTransactWriteItems:
 		input, ok := req.Params.(*dynamodb.TransactWriteItemsInput)
 		if !ok {
-			req.Error = awserr.New(request.ErrCodeSerialization, "expected *TransactWriteItemsInput", nil)
+			req.Error = awserr.New(request.SerializationErrorCode, "expected *TransactWriteItemsInput", nil)
 			return
 		}
 		output, ok := req.Data.(*dynamodb.TransactWriteItemsOutput)
 		if !ok {
-			req.Error = awserr.New(request.ErrCodeSerialization, "expected *TransactWriteItemsOutput", nil)
+			req.Error = awserr.New(request.SerializationErrorCode, "expected *TransactWriteItemsOutput", nil)
 			return
 		}
 		req.Data, req.Error = client.TransactWriteItemsWithOptions(input, output, opt)
 	default:
-		req.Error = awserr.New(request.InvalidParameterErrCode, "unknown op "+req.Operation.Name, nil)
+		req.Error = awserr.New(request.InvalidParameterErrorCode, "unknown op "+req.Operation.Name, nil)
 		return
 	}
 }
 
-func (client *SingleDaxClient) newContext(o RequestOptions) aws.Context {
+func (client *SingleDaxClient) newContext(o RequestOptions) context.Context {
 	if o.Context != nil {
 		return o.Context
 	}
-	return aws.BackgroundContext()
+	return context.Background()
 }
 
 func (client *SingleDaxClient) executeWithRetries(op string, o RequestOptions, encoder func(writer *cbor.Writer) error, decoder func(reader *cbor.Reader) error) error {
@@ -746,7 +745,7 @@ func (client *SingleDaxClient) executeWithRetries(op string, o RequestOptions, e
 	return translateError(err)
 }
 
-func (client *SingleDaxClient) executeWithContext(ctx aws.Context, op string, encoder func(writer *cbor.Writer) error, decoder func(reader *cbor.Reader) error, opt RequestOptions) error {
+func (client *SingleDaxClient) executeWithContext(ctx context.Context, op string, encoder func(writer *cbor.Writer) error, decoder func(reader *cbor.Reader) error, opt RequestOptions) error {
 	t, err := client.pool.getWithContext(ctx, client.isHighPriority(op), opt)
 	if err != nil {
 		return err

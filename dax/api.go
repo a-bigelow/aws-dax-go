@@ -16,20 +16,23 @@
 package dax
 
 import (
+	"context"
 	"errors"
 	"io"
 
 	"github.com/aws/aws-dax-go/dax/internal/client"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/retry"
+	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 )
 
 func (d *Dax) PutItem(input *dynamodb.PutItemInput) (*dynamodb.PutItemOutput, error) {
 	return d.PutItemWithContext(nil, input)
 }
 
-func (d *Dax) PutItemWithContext(ctx aws.Context, input *dynamodb.PutItemInput, opts ...request.Option) (*dynamodb.PutItemOutput, error) {
+func (d *Dax) PutItemWithContext(ctx context.Context, input *dynamodb.PutItemInput, opts ...func(*request.Request)) (*dynamodb.PutItemOutput, error) {
 	o, cfn, err := d.config.requestOptions(false, ctx, opts...)
 	if err != nil {
 		return nil, err
@@ -46,7 +49,7 @@ func (d *Dax) PutItemRequest(input *dynamodb.PutItemInput) (*request.Request, *d
 		input = &dynamodb.PutItemInput{}
 	}
 	output := &dynamodb.PutItemOutput{}
-	opt := client.RequestOptions{Context: aws.BackgroundContext()}
+	opt := client.RequestOptions{Context: context.Background()}
 	req := d.client.NewDaxRequest(op, input, output, opt)
 	return req, output
 }
@@ -55,7 +58,7 @@ func (d *Dax) DeleteItem(input *dynamodb.DeleteItemInput) (*dynamodb.DeleteItemO
 	return d.DeleteItemWithContext(nil, input)
 }
 
-func (d *Dax) DeleteItemWithContext(ctx aws.Context, input *dynamodb.DeleteItemInput, opts ...request.Option) (*dynamodb.DeleteItemOutput, error) {
+func (d *Dax) DeleteItemWithContext(ctx context.Context, input *dynamodb.DeleteItemInput, opts ...func(*request.Request)) (*dynamodb.DeleteItemOutput, error) {
 	o, cfn, err := d.config.requestOptions(false, ctx, opts...)
 	if err != nil {
 		return nil, err
@@ -72,7 +75,7 @@ func (d *Dax) DeleteItemRequest(input *dynamodb.DeleteItemInput) (*request.Reque
 		input = &dynamodb.DeleteItemInput{}
 	}
 	output := &dynamodb.DeleteItemOutput{}
-	opt := client.RequestOptions{Context: aws.BackgroundContext()}
+	opt := client.RequestOptions{Context: context.Background()}
 	req := d.client.NewDaxRequest(op, input, output, opt)
 	return req, output
 }
@@ -81,7 +84,7 @@ func (d *Dax) UpdateItem(input *dynamodb.UpdateItemInput) (*dynamodb.UpdateItemO
 	return d.UpdateItemWithContext(nil, input)
 }
 
-func (d *Dax) UpdateItemWithContext(ctx aws.Context, input *dynamodb.UpdateItemInput, opts ...request.Option) (*dynamodb.UpdateItemOutput, error) {
+func (d *Dax) UpdateItemWithContext(ctx context.Context, input *dynamodb.UpdateItemInput, opts ...func(*request.Request)) (*dynamodb.UpdateItemOutput, error) {
 	o, cfn, err := d.config.requestOptions(false, ctx, opts...)
 	if err != nil {
 		return nil, err
@@ -98,7 +101,7 @@ func (d *Dax) UpdateItemRequest(input *dynamodb.UpdateItemInput) (*request.Reque
 		input = &dynamodb.UpdateItemInput{}
 	}
 	output := &dynamodb.UpdateItemOutput{}
-	opt := client.RequestOptions{Context: aws.BackgroundContext()}
+	opt := client.RequestOptions{Context: context.Background()}
 	req := d.client.NewDaxRequest(op, input, output, opt)
 	return req, output
 }
@@ -107,7 +110,7 @@ func (d *Dax) GetItem(input *dynamodb.GetItemInput) (*dynamodb.GetItemOutput, er
 	return d.GetItemWithContext(nil, input)
 }
 
-func (d *Dax) GetItemWithContext(ctx aws.Context, input *dynamodb.GetItemInput, opts ...request.Option) (*dynamodb.GetItemOutput, error) {
+func (d *Dax) GetItemWithContext(ctx context.Context, input *dynamodb.GetItemInput, opts ...func(*request.Request)) (*dynamodb.GetItemOutput, error) {
 	o, cfn, err := d.config.requestOptions(true, ctx, opts...)
 	if err != nil {
 		return nil, err
@@ -124,7 +127,7 @@ func (d *Dax) GetItemRequest(input *dynamodb.GetItemInput) (*request.Request, *d
 		input = &dynamodb.GetItemInput{}
 	}
 	output := &dynamodb.GetItemOutput{}
-	opt := client.RequestOptions{Context: aws.BackgroundContext()}
+	opt := client.RequestOptions{Context: context.Background()}
 	req := d.client.NewDaxRequest(op, input, output, opt)
 	return req, output
 }
@@ -133,7 +136,7 @@ func (d *Dax) Scan(input *dynamodb.ScanInput) (*dynamodb.ScanOutput, error) {
 	return d.ScanWithContext(nil, input)
 }
 
-func (d *Dax) ScanWithContext(ctx aws.Context, input *dynamodb.ScanInput, opts ...request.Option) (*dynamodb.ScanOutput, error) {
+func (d *Dax) ScanWithContext(ctx context.Context, input *dynamodb.ScanInput, opts ...func(*request.Request)) (*dynamodb.ScanOutput, error) {
 	o, cfn, err := d.config.requestOptions(true, ctx, opts...)
 	if err != nil {
 		return nil, err
@@ -158,7 +161,7 @@ func (d *Dax) ScanRequest(input *dynamodb.ScanInput) (*request.Request, *dynamod
 		input = &dynamodb.ScanInput{}
 	}
 	output := &dynamodb.ScanOutput{}
-	opt := client.RequestOptions{Context: aws.BackgroundContext()}
+	opt := client.RequestOptions{Context: context.Background()}
 	req := d.client.NewDaxRequest(op, input, output, opt)
 	return req, output
 }
@@ -167,7 +170,7 @@ func (d *Dax) Query(input *dynamodb.QueryInput) (*dynamodb.QueryOutput, error) {
 	return d.QueryWithContext(nil, input)
 }
 
-func (d *Dax) QueryWithContext(ctx aws.Context, input *dynamodb.QueryInput, opts ...request.Option) (*dynamodb.QueryOutput, error) {
+func (d *Dax) QueryWithContext(ctx context.Context, input *dynamodb.QueryInput, opts ...func(*request.Request)) (*dynamodb.QueryOutput, error) {
 	o, cfn, err := d.config.requestOptions(true, ctx, opts...)
 	if err != nil {
 		return nil, err
@@ -192,7 +195,7 @@ func (d *Dax) QueryRequest(input *dynamodb.QueryInput) (*request.Request, *dynam
 		input = &dynamodb.QueryInput{}
 	}
 	output := &dynamodb.QueryOutput{}
-	opt := client.RequestOptions{Context: aws.BackgroundContext()}
+	opt := client.RequestOptions{Context: context.Background()}
 	req := d.client.NewDaxRequest(op, input, output, opt)
 	return req, output
 }
@@ -201,7 +204,7 @@ func (d *Dax) BatchWriteItem(input *dynamodb.BatchWriteItemInput) (*dynamodb.Bat
 	return d.BatchWriteItemWithContext(nil, input)
 }
 
-func (d *Dax) BatchWriteItemWithContext(ctx aws.Context, input *dynamodb.BatchWriteItemInput, opts ...request.Option) (*dynamodb.BatchWriteItemOutput, error) {
+func (d *Dax) BatchWriteItemWithContext(ctx context.Context, input *dynamodb.BatchWriteItemInput, opts ...func(*request.Request)) (*dynamodb.BatchWriteItemOutput, error) {
 	o, cfn, err := d.config.requestOptions(false, ctx, opts...)
 	if err != nil {
 		return nil, err
@@ -218,7 +221,7 @@ func (d *Dax) BatchWriteItemRequest(input *dynamodb.BatchWriteItemInput) (*reque
 		input = &dynamodb.BatchWriteItemInput{}
 	}
 	output := &dynamodb.BatchWriteItemOutput{}
-	opt := client.RequestOptions{Context: aws.BackgroundContext()}
+	opt := client.RequestOptions{Context: context.Background()}
 	req := d.client.NewDaxRequest(op, input, output, opt)
 	return req, output
 }
@@ -227,7 +230,7 @@ func (d *Dax) BatchGetItem(input *dynamodb.BatchGetItemInput) (*dynamodb.BatchGe
 	return d.BatchGetItemWithContext(nil, input)
 }
 
-func (d *Dax) BatchGetItemWithContext(ctx aws.Context, input *dynamodb.BatchGetItemInput, opts ...request.Option) (*dynamodb.BatchGetItemOutput, error) {
+func (d *Dax) BatchGetItemWithContext(ctx context.Context, input *dynamodb.BatchGetItemInput, opts ...func(*request.Request)) (*dynamodb.BatchGetItemOutput, error) {
 	o, cfn, err := d.config.requestOptions(true, ctx, opts...)
 	if err != nil {
 		return nil, err
@@ -252,7 +255,7 @@ func (d *Dax) BatchGetItemRequest(input *dynamodb.BatchGetItemInput) (*request.R
 		input = &dynamodb.BatchGetItemInput{}
 	}
 	output := &dynamodb.BatchGetItemOutput{}
-	opt := client.RequestOptions{Context: aws.BackgroundContext()}
+	opt := client.RequestOptions{Context: context.Background()}
 	req := d.client.NewDaxRequest(op, input, output, opt)
 	return req, output
 }
@@ -261,7 +264,7 @@ func (d *Dax) TransactWriteItems(input *dynamodb.TransactWriteItemsInput) (*dyna
 	return d.TransactWriteItemsWithContext(nil, input)
 }
 
-func (d *Dax) TransactWriteItemsWithContext(ctx aws.Context, input *dynamodb.TransactWriteItemsInput, opts ...request.Option) (*dynamodb.TransactWriteItemsOutput, error) {
+func (d *Dax) TransactWriteItemsWithContext(ctx context.Context, input *dynamodb.TransactWriteItemsInput, opts ...func(*request.Request)) (*dynamodb.TransactWriteItemsOutput, error) {
 	o, cfn, err := d.config.requestOptions(false, ctx, opts...)
 	if err != nil {
 		return nil, err
@@ -278,7 +281,7 @@ func (d *Dax) TransactWriteItemsRequest(input *dynamodb.TransactWriteItemsInput)
 		input = &dynamodb.TransactWriteItemsInput{}
 	}
 	output := &dynamodb.TransactWriteItemsOutput{}
-	opt := client.RequestOptions{Context: aws.BackgroundContext()}
+	opt := client.RequestOptions{Context: context.Background()}
 	req := d.client.NewDaxRequest(op, input, output, opt)
 	return req, output
 }
@@ -287,7 +290,7 @@ func (d *Dax) TransactGetItems(input *dynamodb.TransactGetItemsInput) (*dynamodb
 	return d.TransactGetItemsWithContext(nil, input)
 }
 
-func (d *Dax) TransactGetItemsWithContext(ctx aws.Context, input *dynamodb.TransactGetItemsInput, opts ...request.Option) (*dynamodb.TransactGetItemsOutput, error) {
+func (d *Dax) TransactGetItemsWithContext(ctx context.Context, input *dynamodb.TransactGetItemsInput, opts ...func(*request.Request)) (*dynamodb.TransactGetItemsOutput, error) {
 	o, cfn, err := d.config.requestOptions(true, ctx, opts...)
 	if err != nil {
 		return nil, err
@@ -304,16 +307,16 @@ func (d *Dax) TransactGetItemsRequest(input *dynamodb.TransactGetItemsInput) (*r
 		input = &dynamodb.TransactGetItemsInput{}
 	}
 	output := &dynamodb.TransactGetItemsOutput{}
-	opt := client.RequestOptions{Context: aws.BackgroundContext()}
+	opt := client.RequestOptions{Context: context.Background()}
 	req := d.client.NewDaxRequest(op, input, output, opt)
 	return req, output
 }
 
 func (d *Dax) BatchGetItemPages(input *dynamodb.BatchGetItemInput, fn func(*dynamodb.BatchGetItemOutput, bool) bool) error {
-	return d.BatchGetItemPagesWithContext(aws.BackgroundContext(), input, fn)
+	return d.BatchGetItemPagesWithContext(context.Background(), input, fn)
 }
 
-func (d *Dax) BatchGetItemPagesWithContext(ctx aws.Context, input *dynamodb.BatchGetItemInput, fn func(*dynamodb.BatchGetItemOutput, bool) bool, opts ...request.Option) error {
+func (d *Dax) BatchGetItemPagesWithContext(ctx context.Context, input *dynamodb.BatchGetItemInput, fn func(*dynamodb.BatchGetItemOutput, bool) bool, opts ...func(*request.Request)) error {
 	p := request.Pagination{
 		NewRequest: func() (*request.Request, error) {
 			var inCpy *dynamodb.BatchGetItemInput
@@ -338,10 +341,10 @@ func (d *Dax) BatchGetItemPagesWithContext(ctx aws.Context, input *dynamodb.Batc
 }
 
 func (d *Dax) QueryPages(input *dynamodb.QueryInput, fn func(*dynamodb.QueryOutput, bool) bool) error {
-	return d.QueryPagesWithContext(aws.BackgroundContext(), input, fn)
+	return d.QueryPagesWithContext(context.Background(), input, fn)
 }
 
-func (d *Dax) QueryPagesWithContext(ctx aws.Context, input *dynamodb.QueryInput, fn func(*dynamodb.QueryOutput, bool) bool, opts ...request.Option) error {
+func (d *Dax) QueryPagesWithContext(ctx context.Context, input *dynamodb.QueryInput, fn func(*dynamodb.QueryOutput, bool) bool, opts ...func(*request.Request)) error {
 	p := request.Pagination{
 		NewRequest: func() (*request.Request, error) {
 			var inCpy *dynamodb.QueryInput
@@ -364,10 +367,10 @@ func (d *Dax) QueryPagesWithContext(ctx aws.Context, input *dynamodb.QueryInput,
 }
 
 func (d *Dax) ScanPages(input *dynamodb.ScanInput, fn func(*dynamodb.ScanOutput, bool) bool) error {
-	return d.ScanPagesWithContext(aws.BackgroundContext(), input, fn)
+	return d.ScanPagesWithContext(context.Background(), input, fn)
 }
 
-func (d *Dax) ScanPagesWithContext(ctx aws.Context, input *dynamodb.ScanInput, fn func(*dynamodb.ScanOutput, bool) bool, opts ...request.Option) error {
+func (d *Dax) ScanPagesWithContext(ctx context.Context, input *dynamodb.ScanInput, fn func(*dynamodb.ScanOutput, bool) bool, opts ...func(*request.Request)) error {
 	p := request.Pagination{
 		NewRequest: func() (*request.Request, error) {
 			var inCpy *dynamodb.ScanInput
@@ -393,7 +396,7 @@ func (d *Dax) CreateBackup(*dynamodb.CreateBackupInput) (*dynamodb.CreateBackupO
 	return nil, d.unImpl()
 }
 
-func (d *Dax) CreateBackupWithContext(aws.Context, *dynamodb.CreateBackupInput, ...request.Option) (*dynamodb.CreateBackupOutput, error) {
+func (d *Dax) CreateBackupWithContext(context.Context, *dynamodb.CreateBackupInput, ...func(*request.Request)) (*dynamodb.CreateBackupOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -405,7 +408,7 @@ func (d *Dax) CreateGlobalTable(*dynamodb.CreateGlobalTableInput) (*dynamodb.Cre
 	return nil, d.unImpl()
 }
 
-func (d *Dax) CreateGlobalTableWithContext(aws.Context, *dynamodb.CreateGlobalTableInput, ...request.Option) (*dynamodb.CreateGlobalTableOutput, error) {
+func (d *Dax) CreateGlobalTableWithContext(context.Context, *dynamodb.CreateGlobalTableInput, ...func(*request.Request)) (*dynamodb.CreateGlobalTableOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -417,7 +420,7 @@ func (d *Dax) CreateTable(*dynamodb.CreateTableInput) (*dynamodb.CreateTableOutp
 	return nil, d.unImpl()
 }
 
-func (d *Dax) CreateTableWithContext(aws.Context, *dynamodb.CreateTableInput, ...request.Option) (*dynamodb.CreateTableOutput, error) {
+func (d *Dax) CreateTableWithContext(context.Context, *dynamodb.CreateTableInput, ...func(*request.Request)) (*dynamodb.CreateTableOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -429,7 +432,7 @@ func (d *Dax) DeleteBackup(*dynamodb.DeleteBackupInput) (*dynamodb.DeleteBackupO
 	return nil, d.unImpl()
 }
 
-func (d *Dax) DeleteBackupWithContext(aws.Context, *dynamodb.DeleteBackupInput, ...request.Option) (*dynamodb.DeleteBackupOutput, error) {
+func (d *Dax) DeleteBackupWithContext(context.Context, *dynamodb.DeleteBackupInput, ...func(*request.Request)) (*dynamodb.DeleteBackupOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -441,7 +444,7 @@ func (d *Dax) DeleteTable(*dynamodb.DeleteTableInput) (*dynamodb.DeleteTableOutp
 	return nil, d.unImpl()
 }
 
-func (d *Dax) DeleteTableWithContext(aws.Context, *dynamodb.DeleteTableInput, ...request.Option) (*dynamodb.DeleteTableOutput, error) {
+func (d *Dax) DeleteTableWithContext(context.Context, *dynamodb.DeleteTableInput, ...func(*request.Request)) (*dynamodb.DeleteTableOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -453,7 +456,7 @@ func (d *Dax) DescribeBackup(*dynamodb.DescribeBackupInput) (*dynamodb.DescribeB
 	return nil, d.unImpl()
 }
 
-func (d *Dax) DescribeBackupWithContext(aws.Context, *dynamodb.DescribeBackupInput, ...request.Option) (*dynamodb.DescribeBackupOutput, error) {
+func (d *Dax) DescribeBackupWithContext(context.Context, *dynamodb.DescribeBackupInput, ...func(*request.Request)) (*dynamodb.DescribeBackupOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -465,7 +468,7 @@ func (d *Dax) DescribeContinuousBackups(*dynamodb.DescribeContinuousBackupsInput
 	return nil, d.unImpl()
 }
 
-func (d *Dax) DescribeContinuousBackupsWithContext(aws.Context, *dynamodb.DescribeContinuousBackupsInput, ...request.Option) (*dynamodb.DescribeContinuousBackupsOutput, error) {
+func (d *Dax) DescribeContinuousBackupsWithContext(context.Context, *dynamodb.DescribeContinuousBackupsInput, ...func(*request.Request)) (*dynamodb.DescribeContinuousBackupsOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -477,7 +480,7 @@ func (d *Dax) DescribeContributorInsights(*dynamodb.DescribeContributorInsightsI
 	return nil, d.unImpl()
 }
 
-func (d *Dax) DescribeContributorInsightsWithContext(aws.Context, *dynamodb.DescribeContributorInsightsInput, ...request.Option) (*dynamodb.DescribeContributorInsightsOutput, error) {
+func (d *Dax) DescribeContributorInsightsWithContext(context.Context, *dynamodb.DescribeContributorInsightsInput, ...func(*request.Request)) (*dynamodb.DescribeContributorInsightsOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -489,7 +492,7 @@ func (d *Dax) DescribeEndpoints(*dynamodb.DescribeEndpointsInput) (*dynamodb.Des
 	return nil, d.unImpl()
 }
 
-func (d *Dax) DescribeEndpointsWithContext(aws.Context, *dynamodb.DescribeEndpointsInput, ...request.Option) (*dynamodb.DescribeEndpointsOutput, error) {
+func (d *Dax) DescribeEndpointsWithContext(context.Context, *dynamodb.DescribeEndpointsInput, ...func(*request.Request)) (*dynamodb.DescribeEndpointsOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -501,7 +504,7 @@ func (d *Dax) DescribeGlobalTable(*dynamodb.DescribeGlobalTableInput) (*dynamodb
 	return nil, d.unImpl()
 }
 
-func (d *Dax) DescribeGlobalTableWithContext(aws.Context, *dynamodb.DescribeGlobalTableInput, ...request.Option) (*dynamodb.DescribeGlobalTableOutput, error) {
+func (d *Dax) DescribeGlobalTableWithContext(context.Context, *dynamodb.DescribeGlobalTableInput, ...func(*request.Request)) (*dynamodb.DescribeGlobalTableOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -513,7 +516,7 @@ func (d *Dax) DescribeGlobalTableSettings(*dynamodb.DescribeGlobalTableSettingsI
 	return nil, d.unImpl()
 }
 
-func (d *Dax) DescribeGlobalTableSettingsWithContext(aws.Context, *dynamodb.DescribeGlobalTableSettingsInput, ...request.Option) (*dynamodb.DescribeGlobalTableSettingsOutput, error) {
+func (d *Dax) DescribeGlobalTableSettingsWithContext(context.Context, *dynamodb.DescribeGlobalTableSettingsInput, ...func(*request.Request)) (*dynamodb.DescribeGlobalTableSettingsOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -525,7 +528,7 @@ func (d *Dax) DescribeImport(*dynamodb.DescribeImportInput) (*dynamodb.DescribeI
 	return nil, d.unImpl()
 }
 
-func (d *Dax) DescribeImportWithContext(aws.Context, *dynamodb.DescribeImportInput, ...request.Option) (*dynamodb.DescribeImportOutput, error) {
+func (d *Dax) DescribeImportWithContext(context.Context, *dynamodb.DescribeImportInput, ...func(*request.Request)) (*dynamodb.DescribeImportOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -537,7 +540,7 @@ func (d *Dax) DescribeLimits(*dynamodb.DescribeLimitsInput) (*dynamodb.DescribeL
 	return nil, d.unImpl()
 }
 
-func (d *Dax) DescribeLimitsWithContext(aws.Context, *dynamodb.DescribeLimitsInput, ...request.Option) (*dynamodb.DescribeLimitsOutput, error) {
+func (d *Dax) DescribeLimitsWithContext(context.Context, *dynamodb.DescribeLimitsInput, ...func(*request.Request)) (*dynamodb.DescribeLimitsOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -549,7 +552,7 @@ func (d *Dax) DescribeTable(*dynamodb.DescribeTableInput) (*dynamodb.DescribeTab
 	return nil, d.unImpl()
 }
 
-func (d *Dax) DescribeTableWithContext(aws.Context, *dynamodb.DescribeTableInput, ...request.Option) (*dynamodb.DescribeTableOutput, error) {
+func (d *Dax) DescribeTableWithContext(context.Context, *dynamodb.DescribeTableInput, ...func(*request.Request)) (*dynamodb.DescribeTableOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -561,7 +564,7 @@ func (d *Dax) DescribeTableReplicaAutoScaling(*dynamodb.DescribeTableReplicaAuto
 	return nil, d.unImpl()
 }
 
-func (d *Dax) DescribeTableReplicaAutoScalingWithContext(aws.Context, *dynamodb.DescribeTableReplicaAutoScalingInput, ...request.Option) (*dynamodb.DescribeTableReplicaAutoScalingOutput, error) {
+func (d *Dax) DescribeTableReplicaAutoScalingWithContext(context.Context, *dynamodb.DescribeTableReplicaAutoScalingInput, ...func(*request.Request)) (*dynamodb.DescribeTableReplicaAutoScalingOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -573,7 +576,7 @@ func (d *Dax) DescribeTimeToLive(*dynamodb.DescribeTimeToLiveInput) (*dynamodb.D
 	return nil, d.unImpl()
 }
 
-func (d *Dax) DescribeTimeToLiveWithContext(aws.Context, *dynamodb.DescribeTimeToLiveInput, ...request.Option) (*dynamodb.DescribeTimeToLiveOutput, error) {
+func (d *Dax) DescribeTimeToLiveWithContext(context.Context, *dynamodb.DescribeTimeToLiveInput, ...func(*request.Request)) (*dynamodb.DescribeTimeToLiveOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -589,7 +592,7 @@ func (d *Dax) BatchExecuteStatementRequest(*dynamodb.BatchExecuteStatementInput)
 	return newRequestForUnimplementedOperation(), &dynamodb.BatchExecuteStatementOutput{}
 }
 
-func (d *Dax) BatchExecuteStatementWithContext(aws.Context, *dynamodb.BatchExecuteStatementInput, ...request.Option) (*dynamodb.BatchExecuteStatementOutput, error) {
+func (d *Dax) BatchExecuteStatementWithContext(context.Context, *dynamodb.BatchExecuteStatementInput, ...func(*request.Request)) (*dynamodb.BatchExecuteStatementOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -597,7 +600,7 @@ func (d *Dax) DescribeExport(*dynamodb.DescribeExportInput) (*dynamodb.DescribeE
 	return nil, d.unImpl()
 }
 
-func (d *Dax) DescribeExportWithContext(aws.Context, *dynamodb.DescribeExportInput, ...request.Option) (*dynamodb.DescribeExportOutput, error) {
+func (d *Dax) DescribeExportWithContext(context.Context, *dynamodb.DescribeExportInput, ...func(*request.Request)) (*dynamodb.DescribeExportOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -609,7 +612,7 @@ func (d *Dax) DescribeKinesisStreamingDestination(*dynamodb.DescribeKinesisStrea
 	return nil, d.unImpl()
 }
 
-func (d *Dax) DescribeKinesisStreamingDestinationWithContext(aws.Context, *dynamodb.DescribeKinesisStreamingDestinationInput, ...request.Option) (*dynamodb.DescribeKinesisStreamingDestinationOutput, error) {
+func (d *Dax) DescribeKinesisStreamingDestinationWithContext(context.Context, *dynamodb.DescribeKinesisStreamingDestinationInput, ...func(*request.Request)) (*dynamodb.DescribeKinesisStreamingDestinationOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -621,7 +624,7 @@ func (d *Dax) DisableKinesisStreamingDestination(*dynamodb.DisableKinesisStreami
 	return nil, d.unImpl()
 }
 
-func (d *Dax) DisableKinesisStreamingDestinationWithContext(aws.Context, *dynamodb.DisableKinesisStreamingDestinationInput, ...request.Option) (*dynamodb.DisableKinesisStreamingDestinationOutput, error) {
+func (d *Dax) DisableKinesisStreamingDestinationWithContext(context.Context, *dynamodb.DisableKinesisStreamingDestinationInput, ...func(*request.Request)) (*dynamodb.DisableKinesisStreamingDestinationOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -633,7 +636,7 @@ func (d *Dax) EnableKinesisStreamingDestination(*dynamodb.EnableKinesisStreaming
 	return nil, d.unImpl()
 }
 
-func (d *Dax) EnableKinesisStreamingDestinationWithContext(aws.Context, *dynamodb.EnableKinesisStreamingDestinationInput, ...request.Option) (*dynamodb.EnableKinesisStreamingDestinationOutput, error) {
+func (d *Dax) EnableKinesisStreamingDestinationWithContext(context.Context, *dynamodb.EnableKinesisStreamingDestinationInput, ...func(*request.Request)) (*dynamodb.EnableKinesisStreamingDestinationOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -645,7 +648,7 @@ func (d *Dax) ExecuteStatement(*dynamodb.ExecuteStatementInput) (*dynamodb.Execu
 	return nil, d.unImpl()
 }
 
-func (d *Dax) ExecuteStatementWithContext(aws.Context, *dynamodb.ExecuteStatementInput, ...request.Option) (*dynamodb.ExecuteStatementOutput, error) {
+func (d *Dax) ExecuteStatementWithContext(context.Context, *dynamodb.ExecuteStatementInput, ...func(*request.Request)) (*dynamodb.ExecuteStatementOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -657,7 +660,7 @@ func (d *Dax) ExecuteTransaction(*dynamodb.ExecuteTransactionInput) (*dynamodb.E
 	return nil, d.unImpl()
 }
 
-func (d *Dax) ExecuteTransactionWithContext(aws.Context, *dynamodb.ExecuteTransactionInput, ...request.Option) (*dynamodb.ExecuteTransactionOutput, error) {
+func (d *Dax) ExecuteTransactionWithContext(context.Context, *dynamodb.ExecuteTransactionInput, ...func(*request.Request)) (*dynamodb.ExecuteTransactionOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -669,7 +672,7 @@ func (d *Dax) ExportTableToPointInTime(*dynamodb.ExportTableToPointInTimeInput) 
 	return nil, d.unImpl()
 }
 
-func (d *Dax) ExportTableToPointInTimeWithContext(aws.Context, *dynamodb.ExportTableToPointInTimeInput, ...request.Option) (*dynamodb.ExportTableToPointInTimeOutput, error) {
+func (d *Dax) ExportTableToPointInTimeWithContext(context.Context, *dynamodb.ExportTableToPointInTimeInput, ...func(*request.Request)) (*dynamodb.ExportTableToPointInTimeOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -681,7 +684,7 @@ func (d *Dax) ListBackups(*dynamodb.ListBackupsInput) (*dynamodb.ListBackupsOutp
 	return nil, d.unImpl()
 }
 
-func (d *Dax) ListBackupsWithContext(aws.Context, *dynamodb.ListBackupsInput, ...request.Option) (*dynamodb.ListBackupsOutput, error) {
+func (d *Dax) ListBackupsWithContext(context.Context, *dynamodb.ListBackupsInput, ...func(*request.Request)) (*dynamodb.ListBackupsOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -693,7 +696,7 @@ func (d *Dax) ImportTable(*dynamodb.ImportTableInput) (*dynamodb.ImportTableOutp
 	return nil, d.unImpl()
 }
 
-func (d *Dax) ImportTableWithContext(aws.Context, *dynamodb.ImportTableInput, ...request.Option) (*dynamodb.ImportTableOutput, error) {
+func (d *Dax) ImportTableWithContext(context.Context, *dynamodb.ImportTableInput, ...func(*request.Request)) (*dynamodb.ImportTableOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -705,7 +708,7 @@ func (d *Dax) ListContributorInsights(*dynamodb.ListContributorInsightsInput) (*
 	return nil, d.unImpl()
 }
 
-func (d *Dax) ListContributorInsightsWithContext(aws.Context, *dynamodb.ListContributorInsightsInput, ...request.Option) (*dynamodb.ListContributorInsightsOutput, error) {
+func (d *Dax) ListContributorInsightsWithContext(context.Context, *dynamodb.ListContributorInsightsInput, ...func(*request.Request)) (*dynamodb.ListContributorInsightsOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -717,7 +720,7 @@ func (d *Dax) ListContributorInsightsPages(*dynamodb.ListContributorInsightsInpu
 	return d.unImpl()
 }
 
-func (d *Dax) ListContributorInsightsPagesWithContext(aws.Context, *dynamodb.ListContributorInsightsInput, func(*dynamodb.ListContributorInsightsOutput, bool) bool, ...request.Option) error {
+func (d *Dax) ListContributorInsightsPagesWithContext(context.Context, *dynamodb.ListContributorInsightsInput, func(*dynamodb.ListContributorInsightsOutput, bool) bool, ...func(*request.Request)) error {
 	return d.unImpl()
 }
 
@@ -725,7 +728,7 @@ func (d *Dax) ListExports(*dynamodb.ListExportsInput) (*dynamodb.ListExportsOutp
 	return nil, d.unImpl()
 }
 
-func (d *Dax) ListExportsWithContext(aws.Context, *dynamodb.ListExportsInput, ...request.Option) (*dynamodb.ListExportsOutput, error) {
+func (d *Dax) ListExportsWithContext(context.Context, *dynamodb.ListExportsInput, ...func(*request.Request)) (*dynamodb.ListExportsOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -737,7 +740,7 @@ func (d *Dax) ListExportsPages(*dynamodb.ListExportsInput, func(*dynamodb.ListEx
 	return d.unImpl()
 }
 
-func (d *Dax) ListExportsPagesWithContext(aws.Context, *dynamodb.ListExportsInput, func(*dynamodb.ListExportsOutput, bool) bool, ...request.Option) error {
+func (d *Dax) ListExportsPagesWithContext(context.Context, *dynamodb.ListExportsInput, func(*dynamodb.ListExportsOutput, bool) bool, ...func(*request.Request)) error {
 	return d.unImpl()
 }
 
@@ -745,7 +748,7 @@ func (d *Dax) ListGlobalTables(*dynamodb.ListGlobalTablesInput) (*dynamodb.ListG
 	return nil, d.unImpl()
 }
 
-func (d *Dax) ListGlobalTablesWithContext(aws.Context, *dynamodb.ListGlobalTablesInput, ...request.Option) (*dynamodb.ListGlobalTablesOutput, error) {
+func (d *Dax) ListGlobalTablesWithContext(context.Context, *dynamodb.ListGlobalTablesInput, ...func(*request.Request)) (*dynamodb.ListGlobalTablesOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -757,7 +760,7 @@ func (d *Dax) ListImports(*dynamodb.ListImportsInput) (*dynamodb.ListImportsOutp
 	return nil, d.unImpl()
 }
 
-func (d *Dax) ListImportsWithContext(aws.Context, *dynamodb.ListImportsInput, ...request.Option) (*dynamodb.ListImportsOutput, error) {
+func (d *Dax) ListImportsWithContext(context.Context, *dynamodb.ListImportsInput, ...func(*request.Request)) (*dynamodb.ListImportsOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -769,7 +772,7 @@ func (d *Dax) ListImportsPages(*dynamodb.ListImportsInput, func(*dynamodb.ListIm
 	return d.unImpl()
 }
 
-func (d *Dax) ListImportsPagesWithContext(aws.Context, *dynamodb.ListImportsInput, func(*dynamodb.ListImportsOutput, bool) bool, ...request.Option) error {
+func (d *Dax) ListImportsPagesWithContext(context.Context, *dynamodb.ListImportsInput, func(*dynamodb.ListImportsOutput, bool) bool, ...func(*request.Request)) error {
 	return d.unImpl()
 }
 
@@ -777,7 +780,7 @@ func (d *Dax) ListTables(*dynamodb.ListTablesInput) (*dynamodb.ListTablesOutput,
 	return nil, d.unImpl()
 }
 
-func (d *Dax) ListTablesWithContext(aws.Context, *dynamodb.ListTablesInput, ...request.Option) (*dynamodb.ListTablesOutput, error) {
+func (d *Dax) ListTablesWithContext(context.Context, *dynamodb.ListTablesInput, ...func(*request.Request)) (*dynamodb.ListTablesOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -789,7 +792,7 @@ func (d *Dax) ListTablesPages(*dynamodb.ListTablesInput, func(*dynamodb.ListTabl
 	return d.unImpl()
 }
 
-func (d *Dax) ListTablesPagesWithContext(aws.Context, *dynamodb.ListTablesInput, func(*dynamodb.ListTablesOutput, bool) bool, ...request.Option) error {
+func (d *Dax) ListTablesPagesWithContext(context.Context, *dynamodb.ListTablesInput, func(*dynamodb.ListTablesOutput, bool) bool, ...func(*request.Request)) error {
 	return d.unImpl()
 }
 
@@ -797,7 +800,7 @@ func (d *Dax) ListTagsOfResource(*dynamodb.ListTagsOfResourceInput) (*dynamodb.L
 	return nil, d.unImpl()
 }
 
-func (d *Dax) ListTagsOfResourceWithContext(aws.Context, *dynamodb.ListTagsOfResourceInput, ...request.Option) (*dynamodb.ListTagsOfResourceOutput, error) {
+func (d *Dax) ListTagsOfResourceWithContext(context.Context, *dynamodb.ListTagsOfResourceInput, ...func(*request.Request)) (*dynamodb.ListTagsOfResourceOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -809,7 +812,7 @@ func (d *Dax) RestoreTableFromBackup(*dynamodb.RestoreTableFromBackupInput) (*dy
 	return nil, d.unImpl()
 }
 
-func (d *Dax) RestoreTableFromBackupWithContext(aws.Context, *dynamodb.RestoreTableFromBackupInput, ...request.Option) (*dynamodb.RestoreTableFromBackupOutput, error) {
+func (d *Dax) RestoreTableFromBackupWithContext(context.Context, *dynamodb.RestoreTableFromBackupInput, ...func(*request.Request)) (*dynamodb.RestoreTableFromBackupOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -821,7 +824,7 @@ func (d *Dax) RestoreTableToPointInTime(*dynamodb.RestoreTableToPointInTimeInput
 	return nil, d.unImpl()
 }
 
-func (d *Dax) RestoreTableToPointInTimeWithContext(aws.Context, *dynamodb.RestoreTableToPointInTimeInput, ...request.Option) (*dynamodb.RestoreTableToPointInTimeOutput, error) {
+func (d *Dax) RestoreTableToPointInTimeWithContext(context.Context, *dynamodb.RestoreTableToPointInTimeInput, ...func(*request.Request)) (*dynamodb.RestoreTableToPointInTimeOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -833,7 +836,7 @@ func (d *Dax) TagResource(*dynamodb.TagResourceInput) (*dynamodb.TagResourceOutp
 	return nil, d.unImpl()
 }
 
-func (d *Dax) TagResourceWithContext(aws.Context, *dynamodb.TagResourceInput, ...request.Option) (*dynamodb.TagResourceOutput, error) {
+func (d *Dax) TagResourceWithContext(context.Context, *dynamodb.TagResourceInput, ...func(*request.Request)) (*dynamodb.TagResourceOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -845,7 +848,7 @@ func (d *Dax) UntagResource(*dynamodb.UntagResourceInput) (*dynamodb.UntagResour
 	return nil, d.unImpl()
 }
 
-func (d *Dax) UntagResourceWithContext(aws.Context, *dynamodb.UntagResourceInput, ...request.Option) (*dynamodb.UntagResourceOutput, error) {
+func (d *Dax) UntagResourceWithContext(context.Context, *dynamodb.UntagResourceInput, ...func(*request.Request)) (*dynamodb.UntagResourceOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -857,7 +860,7 @@ func (d *Dax) UpdateContinuousBackups(*dynamodb.UpdateContinuousBackupsInput) (*
 	return nil, d.unImpl()
 }
 
-func (d *Dax) UpdateContinuousBackupsWithContext(aws.Context, *dynamodb.UpdateContinuousBackupsInput, ...request.Option) (*dynamodb.UpdateContinuousBackupsOutput, error) {
+func (d *Dax) UpdateContinuousBackupsWithContext(context.Context, *dynamodb.UpdateContinuousBackupsInput, ...func(*request.Request)) (*dynamodb.UpdateContinuousBackupsOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -869,7 +872,7 @@ func (d *Dax) UpdateContributorInsights(*dynamodb.UpdateContributorInsightsInput
 	return nil, d.unImpl()
 }
 
-func (d *Dax) UpdateContributorInsightsWithContext(aws.Context, *dynamodb.UpdateContributorInsightsInput, ...request.Option) (*dynamodb.UpdateContributorInsightsOutput, error) {
+func (d *Dax) UpdateContributorInsightsWithContext(context.Context, *dynamodb.UpdateContributorInsightsInput, ...func(*request.Request)) (*dynamodb.UpdateContributorInsightsOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -881,7 +884,7 @@ func (d *Dax) UpdateGlobalTable(*dynamodb.UpdateGlobalTableInput) (*dynamodb.Upd
 	return nil, d.unImpl()
 }
 
-func (d *Dax) UpdateGlobalTableWithContext(aws.Context, *dynamodb.UpdateGlobalTableInput, ...request.Option) (*dynamodb.UpdateGlobalTableOutput, error) {
+func (d *Dax) UpdateGlobalTableWithContext(context.Context, *dynamodb.UpdateGlobalTableInput, ...func(*request.Request)) (*dynamodb.UpdateGlobalTableOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -893,7 +896,7 @@ func (d *Dax) UpdateGlobalTableSettings(*dynamodb.UpdateGlobalTableSettingsInput
 	return nil, d.unImpl()
 }
 
-func (d *Dax) UpdateGlobalTableSettingsWithContext(aws.Context, *dynamodb.UpdateGlobalTableSettingsInput, ...request.Option) (*dynamodb.UpdateGlobalTableSettingsOutput, error) {
+func (d *Dax) UpdateGlobalTableSettingsWithContext(context.Context, *dynamodb.UpdateGlobalTableSettingsInput, ...func(*request.Request)) (*dynamodb.UpdateGlobalTableSettingsOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -905,7 +908,7 @@ func (d *Dax) UpdateKinesisStreamingDestination(*dynamodb.UpdateKinesisStreaming
 	return nil, d.unImpl()
 }
 
-func (d *Dax) UpdateKinesisStreamingDestinationWithContext(aws.Context, *dynamodb.UpdateKinesisStreamingDestinationInput, ...request.Option) (*dynamodb.UpdateKinesisStreamingDestinationOutput, error) {
+func (d *Dax) UpdateKinesisStreamingDestinationWithContext(context.Context, *dynamodb.UpdateKinesisStreamingDestinationInput, ...func(*request.Request)) (*dynamodb.UpdateKinesisStreamingDestinationOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -917,7 +920,7 @@ func (d *Dax) UpdateTable(*dynamodb.UpdateTableInput) (*dynamodb.UpdateTableOutp
 	return nil, d.unImpl()
 }
 
-func (d *Dax) UpdateTableWithContext(aws.Context, *dynamodb.UpdateTableInput, ...request.Option) (*dynamodb.UpdateTableOutput, error) {
+func (d *Dax) UpdateTableWithContext(context.Context, *dynamodb.UpdateTableInput, ...func(*request.Request)) (*dynamodb.UpdateTableOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -929,7 +932,7 @@ func (d *Dax) UpdateTableReplicaAutoScaling(*dynamodb.UpdateTableReplicaAutoScal
 	return nil, d.unImpl()
 }
 
-func (d *Dax) UpdateTableReplicaAutoScalingWithContext(aws.Context, *dynamodb.UpdateTableReplicaAutoScalingInput, ...request.Option) (*dynamodb.UpdateTableReplicaAutoScalingOutput, error) {
+func (d *Dax) UpdateTableReplicaAutoScalingWithContext(context.Context, *dynamodb.UpdateTableReplicaAutoScalingInput, ...func(*request.Request)) (*dynamodb.UpdateTableReplicaAutoScalingOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -941,7 +944,7 @@ func (d *Dax) UpdateTimeToLive(*dynamodb.UpdateTimeToLiveInput) (*dynamodb.Updat
 	return nil, d.unImpl()
 }
 
-func (d *Dax) UpdateTimeToLiveWithContext(aws.Context, *dynamodb.UpdateTimeToLiveInput, ...request.Option) (*dynamodb.UpdateTimeToLiveOutput, error) {
+func (d *Dax) UpdateTimeToLiveWithContext(context.Context, *dynamodb.UpdateTimeToLiveInput, ...func(*request.Request)) (*dynamodb.UpdateTimeToLiveOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -953,7 +956,7 @@ func (d *Dax) WaitUntilTableExists(*dynamodb.DescribeTableInput) error {
 	return d.unImpl()
 }
 
-func (d *Dax) WaitUntilTableExistsWithContext(aws.Context, *dynamodb.DescribeTableInput, ...request.WaiterOption) error {
+func (d *Dax) WaitUntilTableExistsWithContext(context.Context, *dynamodb.DescribeTableInput, ...request.WaiterOption) error {
 	return d.unImpl()
 }
 
@@ -961,7 +964,7 @@ func (d *Dax) WaitUntilTableNotExists(*dynamodb.DescribeTableInput) error {
 	return d.unImpl()
 }
 
-func (d *Dax) WaitUntilTableNotExistsWithContext(aws.Context, *dynamodb.DescribeTableInput, ...request.WaiterOption) error {
+func (d *Dax) WaitUntilTableNotExistsWithContext(context.Context, *dynamodb.DescribeTableInput, ...request.WaiterOption) error {
 	return d.unImpl()
 }
 
@@ -969,7 +972,7 @@ func (d *Dax) DeleteResourcePolicy(*dynamodb.DeleteResourcePolicyInput) (*dynamo
 	return nil, d.unImpl()
 }
 
-func (d *Dax) DeleteResourcePolicyWithContext(aws.Context, *dynamodb.DeleteResourcePolicyInput, ...request.Option) (*dynamodb.DeleteResourcePolicyOutput, error) {
+func (d *Dax) DeleteResourcePolicyWithContext(context.Context, *dynamodb.DeleteResourcePolicyInput, ...func(*request.Request)) (*dynamodb.DeleteResourcePolicyOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -980,7 +983,7 @@ func (d *Dax) DeleteResourcePolicyRequest(input *dynamodb.DeleteResourcePolicyIn
 func (d *Dax) GetResourcePolicy(*dynamodb.GetResourcePolicyInput) (*dynamodb.GetResourcePolicyOutput, error) {
 	return nil, d.unImpl()
 }
-func (d *Dax) GetResourcePolicyWithContext(aws.Context, *dynamodb.GetResourcePolicyInput, ...request.Option) (*dynamodb.GetResourcePolicyOutput, error) {
+func (d *Dax) GetResourcePolicyWithContext(context.Context, *dynamodb.GetResourcePolicyInput, ...func(*request.Request)) (*dynamodb.GetResourcePolicyOutput, error) {
 	return nil, d.unImpl()
 }
 
@@ -991,7 +994,7 @@ func (d *Dax) GetResourcePolicyRequest(input *dynamodb.GetResourcePolicyInput) (
 func (d *Dax) PutResourcePolicy(*dynamodb.PutResourcePolicyInput) (*dynamodb.PutResourcePolicyOutput, error) {
 	return nil, d.unImpl()
 }
-func (d *Dax) PutResourcePolicyWithContext(aws.Context, *dynamodb.PutResourcePolicyInput, ...request.Option) (*dynamodb.PutResourcePolicyOutput, error) {
+func (d *Dax) PutResourcePolicyWithContext(context.Context, *dynamodb.PutResourcePolicyInput, ...func(*request.Request)) (*dynamodb.PutResourcePolicyOutput, error) {
 	return nil, d.unImpl()
 }
 

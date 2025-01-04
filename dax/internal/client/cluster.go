@@ -29,12 +29,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/defaults"
-	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/awserr"
+	"github.com/aws/aws-sdk-go-v2/aws/credentials"
+	"github.com/aws/aws-sdk-go-v2/aws/defaults"
+	"github.com/aws/aws-sdk-go-v2/aws/request"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 )
 
 type serviceEndpoint struct {
@@ -84,16 +84,16 @@ type connConfig struct {
 
 func (cfg *Config) validate() error {
 	if cfg.HostPorts == nil || len(cfg.HostPorts) == 0 {
-		return awserr.New(request.ParamRequiredErrCode, "HostPorts is required", nil)
+		return awserr.New(request.ParamRequiredErrorCode, "HostPorts is required", nil)
 	}
 	if len(cfg.Region) == 0 {
-		return awserr.New(request.ParamRequiredErrCode, "Region is required", nil)
+		return awserr.New(request.ParamRequiredErrorCode, "Region is required", nil)
 	}
 	if cfg.Credentials == nil {
-		return awserr.New(request.ParamRequiredErrCode, "Credentials is required", nil)
+		return awserr.New(request.ParamRequiredErrorCode, "Credentials is required", nil)
 	}
 	if cfg.MaxPendingConnectionsPerHost < 0 {
-		return awserr.New(request.InvalidParameterErrCode, "MaxPendingConnectionsPerHost cannot be negative", nil)
+		return awserr.New(request.InvalidParameterErrorCode, "MaxPendingConnectionsPerHost cannot be negative", nil)
 	}
 	return nil
 }
@@ -405,11 +405,11 @@ func (cc *ClusterDaxClient) retry(op string, action func(client DaxAPI, o Reques
 	return err
 }
 
-func (cc *ClusterDaxClient) newContext(o RequestOptions) aws.Context {
+func (cc *ClusterDaxClient) newContext(o RequestOptions) context.Context {
 	if o.Context != nil {
 		return o.Context
 	}
-	return aws.BackgroundContext()
+	return context.Background()
 }
 
 func (cc *ClusterDaxClient) shouldRetry(o RequestOptions, err error) (request.Request, bool) {
@@ -475,11 +475,11 @@ func getHostPorts(hosts []string) (hostPorts []hostPort, hostname string, isEncr
 			if i == 0 {
 				isEncrypted = true
 			} else {
-				return handle(awserr.New(request.ErrCodeRequestError, "Inconsistency between the schemes of provided endpoints.", nil))
+				return handle(awserr.New(request.RequestErrorCode, "Inconsistency between the schemes of provided endpoints.", nil))
 			}
 		}
 		if scheme == "daxs" && i > 0 {
-			return handle(awserr.New(request.InvalidParameterErrCode, "Only one cluster discovery endpoint may be provided for encrypted cluster", nil))
+			return handle(awserr.New(request.InvalidParameterErrorCode, "Only one cluster discovery endpoint may be provided for encrypted cluster", nil))
 		}
 		out[i] = hostPort{host, port}
 		hostname = host
@@ -497,7 +497,7 @@ func parseHostPort(hostPort string) (host string, port int, scheme string, err e
 
 	if colon == -1 {
 		if strings.Index(hostPort, ":") == -1 {
-			return handle(awserr.New(request.ErrCodeRequestError, "Invalid hostport", nil))
+			return handle(awserr.New(request.RequestErrorCode, "Invalid hostport", nil))
 		}
 		uriString = "dax://" + hostPort
 	}
@@ -510,7 +510,7 @@ func parseHostPort(hostPort string) (host string, port int, scheme string, err e
 	scheme = u.Scheme
 	portStr := u.Port()
 	if host == "" {
-		return handle(awserr.New(request.ErrCodeRequestError, "Invalid hostport", nil))
+		return handle(awserr.New(request.RequestErrorCode, "Invalid hostport", nil))
 	}
 
 	port, err = strconv.Atoi(portStr)
@@ -520,7 +520,7 @@ func parseHostPort(hostPort string) (host string, port int, scheme string, err e
 
 	if _, ok := defaultPorts[scheme]; !ok {
 		schemes := strings.Join(strings.Fields(fmt.Sprint(reflect.ValueOf(defaultPorts).MapKeys())), ",")
-		return handle(awserr.New(request.ErrCodeRequestError, "URL scheme must be one of "+schemes, nil))
+		return handle(awserr.New(request.RequestErrorCode, "URL scheme must be one of "+schemes, nil))
 	}
 
 	return host, port, scheme, nil
@@ -768,7 +768,7 @@ func (c *cluster) pullEndpointsFrom(ip net.IP, port int) ([]serviceEndpoint, err
 		return nil, err
 	}
 	defer c.closeClient(client)
-	ctx, cfn := context.WithTimeout(aws.BackgroundContext(), 5*time.Second)
+	ctx, cfn := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cfn()
 	return client.endpoints(RequestOptions{MaxRetries: 2, Context: ctx})
 }

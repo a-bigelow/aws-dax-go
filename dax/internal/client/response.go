@@ -20,10 +20,10 @@ import (
 
 	"github.com/aws/aws-dax-go/dax/internal/cbor"
 	"github.com/aws/aws-dax-go/dax/internal/lru"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/awserr"
+	"github.com/aws/aws-sdk-go-v2/aws/protocol"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 )
 
 const (
@@ -110,7 +110,7 @@ func decodeEndpoint(reader *cbor.Reader) (serviceEndpoint, error) {
 				return err
 			} else {
 				if role != roleLeader && role != roleReplica {
-					return awserr.New(request.ErrCodeSerialization, fmt.Sprintf("unknown role %d", role), nil)
+					return awserr.New(protocol.ErrCodeSerialization, fmt.Sprintf("unknown role %d", role), nil)
 				}
 				se.role = role
 			}
@@ -215,7 +215,7 @@ func decodePutItemOutput(ctx aws.Context, reader *cbor.Reader, input *dynamodb.P
 			}
 			output.Attributes = attrs
 		default:
-			return awserr.New(request.ErrCodeSerialization, fmt.Sprintf("unknown response param key %d", key), nil)
+			return awserr.New(protocol.ErrCodeSerialization, fmt.Sprintf("unknown response param key %d", key), nil)
 		}
 		return nil
 	})
@@ -262,7 +262,7 @@ func decodeDeleteItemOutput(ctx aws.Context, reader *cbor.Reader, input *dynamod
 			}
 			output.Attributes = attrs
 		default:
-			return awserr.New(request.ErrCodeSerialization, fmt.Sprintf("unknown response param key %d", key), nil)
+			return awserr.New(protocol.ErrCodeSerialization, fmt.Sprintf("unknown response param key %d", key), nil)
 		}
 		return nil
 	})
@@ -302,7 +302,7 @@ func decodeUpdateItemOutput(ctx aws.Context, reader *cbor.Reader, input *dynamod
 		case responseParamAttributes:
 			rv := input.ReturnValues
 			if rv == nil {
-				return awserr.New(request.ErrCodeSerialization, "unexpected return values", nil)
+				return awserr.New(protocol.ErrCodeSerialization, "unexpected return values", nil)
 			}
 			switch *rv {
 			case dynamodb.ReturnValueAllNew, dynamodb.ReturnValueAllOld:
@@ -319,10 +319,10 @@ func decodeUpdateItemOutput(ctx aws.Context, reader *cbor.Reader, input *dynamod
 					return err
 				}
 			default:
-				return awserr.New(request.ErrCodeSerialization, fmt.Sprintf("unexpected return value %s", *rv), nil)
+				return awserr.New(protocol.ErrCodeSerialization, fmt.Sprintf("unexpected return value %s", *rv), nil)
 			}
 		default:
-			return awserr.New(request.ErrCodeSerialization, fmt.Sprintf("unknown response param key %d", key), nil)
+			return awserr.New(protocol.ErrCodeSerialization, fmt.Sprintf("unknown response param key %d", key), nil)
 		}
 		return nil
 	})
@@ -365,7 +365,7 @@ func decodeGetItemOutput(ctx aws.Context, reader *cbor.Reader, input *dynamodb.G
 			}
 			output.Item = item
 		default:
-			return awserr.New(request.ErrCodeSerialization, fmt.Sprintf("unknown response param key %d", key), nil)
+			return awserr.New(protocol.ErrCodeSerialization, fmt.Sprintf("unknown response param key %d", key), nil)
 		}
 		return nil
 	})
@@ -477,7 +477,7 @@ func decodeScanQueryOutput(ctx aws.Context, reader *cbor.Reader, table string, i
 				out.LastEvaluatedKey = k
 			}
 		default:
-			return awserr.New(request.ErrCodeSerialization, fmt.Sprintf("unknown response param key %d", key), nil)
+			return awserr.New(protocol.ErrCodeSerialization, fmt.Sprintf("unknown response param key %d", key), nil)
 		}
 		return nil
 	})
@@ -606,7 +606,7 @@ func decodeBatchGetItemOutput(ctx aws.Context, reader *cbor.Reader, input *dynam
 		return output, err
 	}
 	if l != 2 {
-		return output, awserr.New(request.ErrCodeSerialization, fmt.Sprintf("Unexpected number of objects %d in BatchGetItemOutput", l), nil)
+		return output, awserr.New(protocol.ErrCodeSerialization, fmt.Sprintf("Unexpected number of objects %d in BatchGetItemOutput", l), nil)
 	}
 
 	projectionsByTable := make(map[string][]documentPath, len(input.RequestItems))
@@ -746,7 +746,7 @@ func decodeTransactWriteItemsOutput(ctx aws.Context, reader *cbor.Reader, input 
 	if len != 3 {
 		// returnValues still in the tube even though it's not being returned
 		// But user shouldn't be able to see it.
-		return output, awserr.New(request.ErrCodeSerialization, fmt.Sprintf("TransactWriteResponse needs to have 2 elements, instead had: %d", len), nil)
+		return output, awserr.New(protocol.ErrCodeSerialization, fmt.Sprintf("TransactWriteResponse needs to have 2 elements, instead had: %d", len), nil)
 	}
 	_, err = reader.ReadArrayLength()
 	if err != nil {
@@ -809,7 +809,7 @@ func decodeTransactGetItemsOutput(ctx aws.Context, reader *cbor.Reader, input *d
 		return output, err
 	}
 	if length != 2 {
-		return output, awserr.New(request.ErrCodeSerialization, fmt.Sprintf("TransactGetResponse needs to have 2 elements, instead had: %d", length), nil)
+		return output, awserr.New(protocol.ErrCodeSerialization, fmt.Sprintf("TransactGetResponse needs to have 2 elements, instead had: %d", length), nil)
 	}
 
 	if output == nil {
@@ -821,7 +821,7 @@ func decodeTransactGetItemsOutput(ctx aws.Context, reader *cbor.Reader, input *d
 		return output, err
 	}
 	if numR != len(input.TransactItems) {
-		return output, awserr.New(request.ErrCodeSerialization, fmt.Sprintf("TransactGetResponse need to have the same number of Responses "+
+		return output, awserr.New(protocol.ErrCodeSerialization, fmt.Sprintf("TransactGetResponse need to have the same number of Responses "+
 			"as the length of TransactItems in the input: %d, instead had: %d", len(input.TransactItems), numR), nil)
 	}
 
@@ -895,7 +895,7 @@ func decodeScanQueryItems(ctx aws.Context, reader *cbor.Reader, table string, ke
 				return err
 			}
 			if len != 2 {
-				return awserr.New(request.ErrCodeSerialization, fmt.Sprintf("expected array of size 2 containing key and value, got %d", len), nil)
+				return awserr.New(protocol.ErrCodeSerialization, fmt.Sprintf("expected array of size 2 containing key and value, got %d", len), nil)
 			}
 			key, err := decodeKey(reader, tableKeys)
 			if err != nil {
@@ -1064,7 +1064,7 @@ func decodeCompoundKey(reader *cbor.Reader) (map[string]*dynamodb.AttributeValue
 		return nil, err
 	}
 	if hdr != cbor.MapStream {
-		return nil, awserr.New(request.ErrCodeSerialization, "bad compound key", nil)
+		return nil, awserr.New(protocol.ErrCodeSerialization, "bad compound key", nil)
 	}
 	_, err = r.ReadMapLength()
 	if err != nil {
@@ -1120,7 +1120,7 @@ func decodeNonKeyAttributes(ctx aws.Context, reader *cbor.Reader, attrNamesListT
 	case cbor.Map:
 		return decodeProjection(reader, projectionOrdinals)
 	}
-	return nil, awserr.New(request.ErrCodeSerialization, fmt.Sprintf("unexpected cbor type %v", hdr), nil)
+	return nil, awserr.New(protocol.ErrCodeSerialization, fmt.Sprintf("unexpected cbor type %v", hdr), nil)
 
 }
 
@@ -1128,7 +1128,7 @@ func decodeProjection(reader *cbor.Reader, projectionOrdinals []documentPath) (m
 	ib := &itemBuilder{}
 	err := consumeMap(reader, func(ord int, r *cbor.Reader) error {
 		if ord > len(projectionOrdinals) {
-			return awserr.New(request.ErrCodeSerialization, fmt.Sprintf("unexpected ordinal %v", ord), nil)
+			return awserr.New(protocol.ErrCodeSerialization, fmt.Sprintf("unexpected ordinal %v", ord), nil)
 		}
 		p := projectionOrdinals[ord]
 		v, err := cbor.DecodeAttributeValue(r)
@@ -1161,12 +1161,12 @@ func decodeAttributeProjection(ctx aws.Context, reader *cbor.Reader, attrListIdT
 	}
 	ans, ok := attrNames.([]string)
 	if !ok {
-		return nil, awserr.New(request.ErrCodeSerialization, "invalid type for attribute names list", nil)
+		return nil, awserr.New(protocol.ErrCodeSerialization, "invalid type for attribute names list", nil)
 	}
 	attrs := make(map[string]*dynamodb.AttributeValue)
 	err = consumeMap(r, func(ord int, reader *cbor.Reader) error {
 		if ord > len(ans) {
-			return awserr.New(request.ErrCodeSerialization, "invalid ordinal", nil)
+			return awserr.New(protocol.ErrCodeSerialization, "invalid ordinal", nil)
 		}
 		av, err := cbor.DecodeAttributeValue(reader)
 		if err != nil {
@@ -1286,7 +1286,7 @@ func decodeConsumedCapacityExtended(reader *cbor.Reader) (*dynamodb.ConsumedCapa
 			}
 			cc.SetLocalSecondaryIndexes(c)
 		default:
-			return awserr.New(request.ErrCodeSerialization, fmt.Sprintf("unknown response param key %d", key), nil)
+			return awserr.New(protocol.ErrCodeSerialization, fmt.Sprintf("unknown response param key %d", key), nil)
 		}
 		return nil
 	})
@@ -1327,7 +1327,7 @@ func decodeCapacity(reader *cbor.Reader) (*dynamodb.Capacity, error) {
 			}
 			c.SetWriteCapacityUnits(f)
 		default:
-			return awserr.New(request.ErrCodeSerialization, fmt.Sprintf("unknown response param key %d", key), nil)
+			return awserr.New(protocol.ErrCodeSerialization, fmt.Sprintf("unknown response param key %d", key), nil)
 		}
 		return nil
 	})
@@ -1419,7 +1419,7 @@ func getKeySchema(ctx aws.Context, keySchemaCache *lru.Lru, table string) ([]dyn
 	}
 	keys, ok := k.([]dynamodb.AttributeDefinition)
 	if !ok {
-		return nil, awserr.New(request.ErrCodeSerialization, "invalid type for keyschema", nil)
+		return nil, awserr.New(protocol.ErrCodeSerialization, "invalid type for keyschema", nil)
 	}
 	return keys, nil
 }
