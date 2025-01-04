@@ -19,14 +19,14 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/aws/aws-dax-go/dax/internal/lru"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/awserr"
+	"github.com/aws/aws-sdk-go-v2/aws/request"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"sort"
 )
 
-var ErrMissingKey = awserr.New(request.ParamRequiredErrCode, "One of the required keys was not given a value", nil)
+var ErrMissingKey = awserr.New(request.InvalidParameterErrorCode, "One of the required keys was not given a value", nil)
 
 func EncodeItemKey(item map[string]*dynamodb.AttributeValue, keydef []dynamodb.AttributeDefinition, writer *Writer) error {
 	keyBytes, err := GetEncodedItemKey(item, keydef)
@@ -38,7 +38,7 @@ func EncodeItemKey(item map[string]*dynamodb.AttributeValue, keydef []dynamodb.A
 
 func GetEncodedItemKey(item map[string]*dynamodb.AttributeValue, keydef []dynamodb.AttributeDefinition) ([]byte, error) {
 	if item == nil {
-		return nil, awserr.New(request.InvalidParameterErrCode, "item cannot be nil", nil)
+		return nil, awserr.New(request.InvalidParameterErrorCode, "item cannot be nil", nil)
 	}
 
 	hk := keydef[0]
@@ -77,7 +77,7 @@ func GetEncodedItemKey(item map[string]*dynamodb.AttributeValue, keydef []dynamo
 				return nil, err
 			}
 		default:
-			return nil, awserr.New(request.InvalidParameterErrCode, fmt.Sprintf("Unsupported KeyType encountered in Hash Attribute: "+*hk.AttributeType), nil)
+			return nil, awserr.New(request.InvalidParameterErrorCode, fmt.Sprintf("Unsupported KeyType encountered in Hash Attribute: "+*hk.AttributeType), nil)
 		}
 	} else {
 		switch *hk.AttributeType {
@@ -105,7 +105,7 @@ func GetEncodedItemKey(item map[string]*dynamodb.AttributeValue, keydef []dynamo
 				return nil, err
 			}
 		default:
-			return nil, awserr.New(request.InvalidParameterErrCode, fmt.Sprintf("Unsupported KeyType encountered in Hash Attribute: "+*hk.AttributeType), nil)
+			return nil, awserr.New(request.InvalidParameterErrorCode, fmt.Sprintf("Unsupported KeyType encountered in Hash Attribute: "+*hk.AttributeType), nil)
 		}
 
 		rk := keydef[1]
@@ -130,7 +130,7 @@ func GetEncodedItemKey(item map[string]*dynamodb.AttributeValue, keydef []dynamo
 			d := new(Decimal)
 			d, ok := d.SetString(*n)
 			if !ok {
-				return nil, awserr.New(request.InvalidParameterErrCode, fmt.Sprintf("invalid number "+*n), nil)
+				return nil, awserr.New(request.InvalidParameterErrorCode, fmt.Sprintf("invalid number "+*n), nil)
 			}
 			if _, err := EncodeLexDecimal(d, w.bw); err != nil {
 				return nil, err
@@ -144,7 +144,7 @@ func GetEncodedItemKey(item map[string]*dynamodb.AttributeValue, keydef []dynamo
 				return nil, err
 			}
 		default:
-			return nil, awserr.New(request.InvalidParameterErrCode, fmt.Sprintf("Unsupported KeyType encountered in Range Attribute: "+*rk.AttributeType), nil)
+			return nil, awserr.New(request.InvalidParameterErrorCode, fmt.Sprintf("Unsupported KeyType encountered in Range Attribute: "+*rk.AttributeType), nil)
 		}
 	}
 
@@ -188,7 +188,7 @@ func DecodeItemKey(reader *Reader, keydef []dynamodb.AttributeDefinition) (map[s
 			}
 			keys[*hk.AttributeName] = &dynamodb.AttributeValue{B: kb}
 		default:
-			return nil, awserr.New(request.InvalidParameterErrCode, fmt.Sprintf("Unsupported KeyType encountered in Hash Attribute: "+*hk.AttributeType), nil)
+			return nil, awserr.New(request.InvalidParameterErrorCode, fmt.Sprintf("Unsupported KeyType encountered in Hash Attribute: "+*hk.AttributeType), nil)
 		}
 	} else {
 		r, err := reader.BytesReader()
@@ -219,7 +219,7 @@ func DecodeItemKey(reader *Reader, keydef []dynamodb.AttributeDefinition) (map[s
 			}
 			keys[*hk.AttributeName] = &dynamodb.AttributeValue{B: b}
 		default:
-			return nil, awserr.New(request.InvalidParameterErrCode, fmt.Sprintf("Unsupported KeyType encountered in Hash Attribute: "+*hk.AttributeType), nil)
+			return nil, awserr.New(request.InvalidParameterErrorCode, fmt.Sprintf("Unsupported KeyType encountered in Hash Attribute: "+*hk.AttributeType), nil)
 		}
 
 		rk := keydef[1]
@@ -245,7 +245,7 @@ func DecodeItemKey(reader *Reader, keydef []dynamodb.AttributeDefinition) (map[s
 			}
 			keys[*rk.AttributeName] = &dynamodb.AttributeValue{B: buf.Bytes()}
 		default:
-			return nil, awserr.New(request.InvalidParameterErrCode, fmt.Sprintf("Unsupported KeyType encountered in Range Attribute: "+*rk.AttributeType), nil)
+			return nil, awserr.New(request.InvalidParameterErrorCode, fmt.Sprintf("Unsupported KeyType encountered in Range Attribute: "+*rk.AttributeType), nil)
 		}
 	}
 

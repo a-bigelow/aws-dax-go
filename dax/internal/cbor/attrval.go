@@ -17,10 +17,10 @@ package cbor
 
 import (
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/awserr"
+	"github.com/aws/aws-sdk-go-v2/aws/request"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"math/big"
 	"strconv"
 	"strings"
@@ -35,7 +35,7 @@ const (
 
 func EncodeAttributeValue(value *dynamodb.AttributeValue, writer *Writer) error {
 	if value == nil {
-		return awserr.New(request.InvalidParameterErrCode, "invalid attribute value: nil", nil)
+		return awserr.New(request.InvalidParameterErrorCode, "invalid attribute value: nil", nil)
 	}
 
 	var err error
@@ -107,7 +107,7 @@ func EncodeAttributeValue(value *dynamodb.AttributeValue, writer *Writer) error 
 		err = writer.WriteBoolean(*value.BOOL)
 	case value.NULL != nil:
 		if !(*value.NULL) {
-			return awserr.New(request.InvalidParameterErrCode, "invalid null attribute value", nil) // DaxJavaClient suppress this error
+			return awserr.New(request.InvalidParameterErrorCode, "invalid null attribute value", nil) // DaxJavaClient suppress this error
 		}
 		err = writer.WriteNull()
 	}
@@ -118,7 +118,7 @@ func writeStringNumber(val string, writer *Writer) error {
 	if strings.IndexAny(val, ".eE") >= 0 {
 		dec := new(Decimal)
 		if _, ok := dec.SetString(val); !ok {
-			return awserr.New(request.InvalidParameterErrCode, fmt.Sprintf("invalid number %v", val), nil)
+			return awserr.New(request.InvalidParameterErrorCode, fmt.Sprintf("invalid number %v", val), nil)
 		}
 		err := writer.WriteDecimal(dec)
 		return err
@@ -131,7 +131,7 @@ func writeStringNumber(val string, writer *Writer) error {
 	}
 	i, err := strconv.ParseInt(val, 10, 64)
 	if err != nil {
-		return awserr.New(request.InvalidParameterErrCode, fmt.Sprintf("invalid number %v", val), err)
+		return awserr.New(request.InvalidParameterErrorCode, fmt.Sprintf("invalid number %v", val), err)
 	}
 	err = writer.WriteInt64(i)
 	return err
@@ -208,7 +208,7 @@ func DecodeAttributeValue(reader *Reader) (*dynamodb.AttributeValue, error) {
 		case Nil:
 			return &dynamodb.AttributeValue{NULL: aws.Bool(true)}, nil
 		default:
-			return nil, awserr.New(request.ErrCodeSerialization, fmt.Sprintf("unknown minor type %d for simple major type", minor), nil)
+			return nil, awserr.New(request.SerializationErrorCode, fmt.Sprintf("unknown minor type %d for simple major type", minor), nil)
 		}
 	case Tag:
 		switch minor {
@@ -273,10 +273,10 @@ func DecodeAttributeValue(reader *Reader) (*dynamodb.AttributeValue, error) {
 				}
 				return &dynamodb.AttributeValue{BS: bs}, nil
 			default:
-				return nil, awserr.New(request.ErrCodeSerialization, fmt.Sprintf("unknown minor type %d or tag %d", minor, tag), nil)
+				return nil, awserr.New(request.SerializationErrorCode, fmt.Sprintf("unknown minor type %d or tag %d", minor, tag), nil)
 			}
 		}
 	default:
-		return nil, awserr.New(request.ErrCodeSerialization, fmt.Sprintf("unknown major type %d", major), nil)
+		return nil, awserr.New(request.SerializationErrorCode, fmt.Sprintf("unknown major type %d", major), nil)
 	}
 }

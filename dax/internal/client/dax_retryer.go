@@ -19,7 +19,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/request"
+	"github.com/aws/aws-sdk-go-v2/aws/retry"
 )
 
 //DaxRetryer implements EqualJitterBackoffStratergy for throttled requests
@@ -45,7 +45,7 @@ func (r *DaxRetryer) setRetryerDefaults() {
 }
 
 //RetryRules returns the delay duration before retrying this request again
-func (r DaxRetryer) RetryRules(req *request.Request) time.Duration {
+func (r DaxRetryer) RetryRules(req *retry.Request) time.Duration {
 	if req.IsErrorThrottle() {
 		r.setRetryerDefaults()
 		attempt := req.RetryCount
@@ -61,7 +61,7 @@ func (r DaxRetryer) RetryRules(req *request.Request) time.Duration {
 }
 
 //ShouldRetry returns true if the request should be retried.
-func (r DaxRetryer) ShouldRetry(req *request.Request) bool {
+func (r DaxRetryer) ShouldRetry(req *retry.Request) bool {
 	daxErr := req.Error.(daxError)
 	codes := daxErr.CodeSequence()
 	return len(codes) > 0 && (codes[0] == 1 || codes[0] == 2) || req.IsErrorThrottle() || isAuthCRequiredException(codes)

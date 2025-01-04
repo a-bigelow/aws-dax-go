@@ -16,7 +16,7 @@
 package lru
 
 import (
-	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"sync"
 )
 
